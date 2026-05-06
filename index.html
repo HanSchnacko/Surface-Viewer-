@@ -554,14 +554,15 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
   canvas.style.display = 'none';
   emptyMsg.textContent = 'Höhendaten werden geladen…';
 
-  const SAMPLES = 60;
+  const dist = haversine(pointA, pointB);
+  // More samples for short distances → smoother profile
+  const SAMPLES = dist < 500 ? 99 : dist < 2000 ? 99 : 99;
   const samplePoints = [];
   for (let i = 0; i <= SAMPLES; i++) {
     samplePoints.push(lerp(pointA, pointB, i / SAMPLES));
   }
 
-  const dist = haversine(pointA, pointB);
-  const distances = samplePoints.map((_, i) => ((i / SAMPLES) * dist / 1000).toFixed(3));
+  const distances = samplePoints.map((_, i) => ((i / SAMPLES) * dist / 1000).toFixed(4));
 
   try {
     const elevations = await fetchElevation(samplePoints);
@@ -598,7 +599,8 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
           backgroundColor: gradient,
           fill: true,
           pointRadius: 0,
-          tension: 0.35
+          tension: 0.5,
+          cubicInterpolationMode: 'monotone'
         }]
       },
       options: {
@@ -641,7 +643,8 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
             },
             grid: { color: '#1a2130' },
             border: { color: '#2a3545' },
-            min: Math.max(0, minEl - 50),
+            min: Math.max(0, minEl - Math.max(5, (maxEl - minEl) * 0.15)),
+            max: maxEl + Math.max(5, (maxEl - minEl) * 0.15),
           }
         }
       }
