@@ -3,1128 +3,746 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geländeschnitt</title>
+<title>Geländeschnitt · PV-Planer</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
-
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg: #0b0e14;
-  --surface: #13181f;
-  --panel: #1a2130;
-  --border: #2a3545;
-  --accent: #00e5a0;
-  --accent2: #0090ff;
-  --warn: #ff6b35;
-  --text: #e8edf4;
-  --muted: #6b7a8d;
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'DM Mono', monospace;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0d12;--surface:#111620;--panel:#161d28;--panel2:#1c2535;
+  --border:#232f42;--border2:#2d3e56;
+  --accent:#00e5a0;--accent2:#0080ff;--warn:#ff5533;
+  --text:#dde6f0;--muted:#5a7090;--dimmed:#3a5070;
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+  --radius:6px;
 }
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--mono);}
 
-html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
+/* ── LAYOUT ── */
+#app{display:grid;grid-template-rows:48px 1fr;height:100vh;}
+#main{display:grid;grid-template-columns:1fr 320px;overflow:hidden;}
 
 /* ── HEADER ── */
-#header {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  z-index: 600;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background: rgba(11,14,20,0.88);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;background:var(--surface);
+  border-bottom:1px solid var(--border);z-index:100;
+}
+.logo{font-family:var(--font);font-weight:800;font-size:1rem;letter-spacing:.06em;color:var(--accent);}
+.logo span{color:var(--text);}
+.header-status{display:flex;gap:16px;font-size:.68rem;color:var(--muted);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:5px;transition:background .3s;}
+.dot.on{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+
+/* ── MAP ── */
+#map-wrap{position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
+
+/* Map overlays */
+.map-overlay{
+  position:absolute;z-index:500;
+  background:rgba(10,13,18,.9);
+  border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(8px);font-size:.74rem;font-family:var(--mono);
+}
+#search-box{bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:7px 10px;width:300px;}
+#search-box input{flex:1;background:transparent;border:none;outline:none;color:var(--text);}
+#search-box input::placeholder{color:var(--muted);}
+#search-btn{background:var(--accent);color:#000;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:var(--mono);font-size:.72rem;font-weight:500;}
+
+#instruction{top:60px;left:50%;transform:translateX(-50%);padding:7px 16px;color:var(--text);pointer-events:none;transition:opacity .3s;white-space:nowrap;}
+#instruction.hidden{opacity:0;}
+
+#area-badge{bottom:20px;left:18px;padding:5px 12px;color:var(--accent);border-color:rgba(0,229,160,.3);display:none;}
+#area-badge.show{display:block;}
+
+/* Map action buttons */
+#map-btns{position:absolute;bottom:20px;right:18px;z-index:500;display:flex;flex-direction:column;gap:7px;}
+.map-btn{
+  padding:9px 16px;border-radius:var(--radius);font-family:var(--mono);font-size:.72rem;
+  font-weight:500;cursor:pointer;border:1px solid var(--border);
+  backdrop-filter:blur(8px);transition:all .2s;letter-spacing:.03em;text-align:center;
+  background:rgba(10,13,18,.88);color:var(--muted);
+}
+.map-btn:hover{color:var(--text);border-color:var(--muted);}
+.map-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);}
+.map-btn.primary:hover{background:#00fdb5;}
+.map-btn.danger{color:var(--warn);border-color:rgba(255,85,51,.3);}
+.map-btn.danger:hover{background:rgba(255,85,51,.12);border-color:var(--warn);}
+.map-btn.active{background:rgba(255,85,51,.12);color:#ff8060;border-color:rgba(255,85,51,.5);}
+.map-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* Marker */
+.mkr{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,.15);}
+.mkr.a{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.mkr.b{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+
+/* ── RIGHT PANEL ── */
+#panel{
+  background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
 }
 
-.logo {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: 0.06em;
-  color: var(--accent);
+/* Panel sections */
+.p-section{border-bottom:1px solid var(--border);}
+
+/* Accordeon header */
+.acc-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;cursor:pointer;user-select:none;
+  transition:background .15s;
 }
-.logo span { color: var(--text); }
+.acc-header:hover{background:var(--panel);}
+.acc-title{font-family:var(--font);font-size:.82rem;font-weight:600;color:var(--text);}
+.acc-arrow{font-size:.7rem;color:var(--muted);transition:transform .25s;}
+.acc-arrow.open{transform:rotate(180deg);}
+.acc-body{overflow:hidden;transition:max-height .3s ease;max-height:0;}
+.acc-body.open{max-height:800px;}
+.acc-inner{padding:0 16px 14px;}
 
-#header-status {
-  display: flex;
-  gap: 16px;
-  font-size: 0.7rem;
-  color: var(--muted);
-  font-family: var(--font-mono);
+/* Form fields */
+.field{margin-bottom:10px;}
+.field-label{font-size:.62rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px;}
+select.fsel{
+  width:100%;background:var(--panel);border:1px solid var(--border);
+  border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.76rem;
+  padding:7px 10px;outline:none;cursor:pointer;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235a7090' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
+  transition:border-color .2s;
 }
+select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; transition: background 0.3s; }
-.dot.active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
+/* Schnitt preview */
+#schnitt-wrap{padding:10px 16px 14px;}
+#schnitt-label{font-size:.62rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:6px;}
+#schnitt-svg{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:4px;}
+#schnitt-vals{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;}
+.sv{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 8px;}
+.sv-label{font-size:.58rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.sv-val{font-size:.8rem;color:var(--accent);font-family:var(--font);font-weight:600;}
 
-/* ── INSTRUCTION ── */
-#instruction {
-  position: absolute;
-  top: 62px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  background: rgba(11,14,20,0.88);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px 18px;
-  font-size: 0.76rem;
-  color: var(--text);
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  backdrop-filter: blur(6px);
-  pointer-events: none;
-  transition: opacity 0.3s;
-  white-space: nowrap;
+/* Panel action buttons */
+#panel-actions{padding:14px 16px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;flex:1;}
+.p-btn{
+  width:100%;padding:9px;border-radius:var(--radius);font-family:var(--mono);
+  font-size:.74rem;font-weight:500;cursor:pointer;border:1px solid var(--border);
+  transition:all .2s;letter-spacing:.03em;text-align:center;
+  background:var(--panel);color:var(--muted);
 }
-#instruction.hidden { opacity: 0; }
+.p-btn:hover{color:var(--text);border-color:var(--muted);}
+.p-btn.green{background:var(--accent);color:#000;border-color:var(--accent);}
+.p-btn.green:hover{background:#00fdb5;}
+.p-btn.blue{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+.p-btn.blue:hover{background:#3399ff;}
+.p-btn.red{color:var(--warn);border-color:rgba(255,85,51,.3);}
+.p-btn.red:hover{background:rgba(255,85,51,.1);border-color:var(--warn);}
+.p-btn:disabled{opacity:.3;cursor:not-allowed;}
+.p-btn.active{background:rgba(255,100,60,.1);color:#ff8060;border-color:rgba(255,85,51,.5);}
 
-/* ── SEARCH BOX ── */
-#search-box {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  display: flex;
-  gap: 6px;
-  background: rgba(11,14,20,0.92);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 10px;
-  backdrop-filter: blur(8px);
-  width: 300px;
+.p-divider{height:1px;background:var(--border);margin:4px 0;}
+
+/* Stats */
+#field-stats{
+  padding:10px 16px;border-top:1px solid var(--border);
+  font-size:.7rem;color:var(--muted);line-height:1.8;display:none;
 }
+#field-stats.show{display:block;}
+.stat-line span{color:var(--text);}
 
-#search-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  letter-spacing: 0.03em;
-}
-#search-box input::placeholder { color: var(--muted); }
-
-#btn-search {
-  flex: none;
-  padding: 4px 12px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#btn-search:hover { background: #00fdb5; }
-
-/* ── FLOATING BUTTONS ── */
-#floating-btns {
-  position: absolute;
-  bottom: 32px;
-  right: 20px;
-  z-index: 500;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.flt-btn {
-  padding: 10px 18px;
-  border-radius: 5px;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  backdrop-filter: blur(8px);
-  transition: all 0.2s;
-  letter-spacing: 0.04em;
-}
-
-#btn-reset {
-  background: rgba(11,14,20,0.88);
-  color: var(--muted);
-}
-#btn-reset:hover { color: var(--text); border-color: var(--muted); }
-
-#btn-profile {
-  background: var(--accent);
-  color: #000;
-  border-color: var(--accent);
-}
-#btn-profile:hover { background: #00fdb5; border-color: #00fdb5; }
-#btn-profile:disabled { opacity: 0.35; cursor: not-allowed; background: var(--accent); }
-
-/* ── MARKERS ── */
-.marker-pin {
-  width: 20px; height: 20px;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  border: 2px solid rgba(255,255,255,0.2);
-}
-.marker-pin.a { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-.marker-pin.b { background: var(--accent2); box-shadow: 0 0 10px var(--accent2); }
-
-/* ── MODAL ── */
-#modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(5,8,12,0.82);
-  backdrop-filter: blur(5px);
-  align-items: center;
-  justify-content: center;
-}
-#modal-overlay.open { display: flex; }
-
-#modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: min(94vw, 1100px);
-  height: min(88vh, 700px);
-  display: grid;
-  grid-template-rows: 52px 1fr 60px;
-  overflow: hidden;
-  animation: modalIn 0.22s ease;
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.97) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-#modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-#modal-header h2 {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-#modal-close {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--muted);
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  font-family: var(--font-mono);
-}
-#modal-close:hover { color: var(--text); border-color: var(--border); }
-
-#modal-chart-wrap {
-  padding: 20px 28px 12px;
-  position: relative;
-  min-height: 0;
-}
-
-#modal-chart { width: 100% !important; height: 100% !important; }
-
-#modal-footer {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr) auto;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.modal-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-right: 1px solid var(--border);
-}
-.modal-stat:last-child { border-right: none; }
-
-.modal-stat-label {
-  font-size: 0.6rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-  font-family: var(--font-mono);
-}
-
-.modal-stat-val {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.modal-stat-val.green { color: var(--accent); }
-.modal-stat-val.blue  { color: var(--accent2); }
-.modal-stat-val.warn  { color: var(--warn); }
-
-/* ── LOADING OVERLAY ── */
-#loading {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 1500;
-  background: rgba(5,8,12,0.7);
-  backdrop-filter: blur(3px);
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 14px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--muted);
-  letter-spacing: 0.06em;
-}
-#loading.active { display: flex; }
-
-.spinner {
-  width: 32px; height: 32px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── UK MODAL ── */
-#uk-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  background: rgba(5,8,12,0.85);
-  backdrop-filter: blur(5px);
-  align-items: center;
-  justify-content: center;
-}
-#uk-overlay.open { display: flex; }
-
-#uk-modal {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: min(96vw, 900px);
-  animation: modalIn 0.22s ease;
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: 50px 1fr auto;
-}
-
-#uk-content {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  min-height: 0;
-  overflow: hidden;
-}
-
-#uk-body {
-  padding: 20px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-}
-
-#uk-preview {
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--panel);
-}
-
-#uk-preview-title {
-  font-size: 0.65rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-family: var(--font-mono);
-}
-
-#uk-svg {
-  width: 100%;
-  flex: 1;
-}
-
-#uk-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  height: 50px;
-  border-bottom: 1px solid var(--border);
-}
-
-#uk-header h2 {
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-#uk-close {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--muted);
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  font-family: var(--font-mono);
-}
-#uk-close:hover { color: var(--text); border-color: var(--border); }
-
-
-
-.uk-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.uk-label {
-  font-size: 0.68rem;
-  color: var(--muted);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  font-family: var(--font-mono);
-}
-
-.uk-select {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  padding: 9px 12px;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 32px;
-}
-.uk-select:hover, .uk-select:focus { border-color: var(--accent2); }
-
-#uk-footer {
-  padding: 14px 24px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-#uk-cancel {
-  padding: 8px 18px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-#uk-cancel:hover { color: var(--text); border-color: var(--muted); }
-
-#uk-apply {
-  padding: 8px 22px;
-  background: var(--accent2);
-  border: 1px solid var(--accent2);
-  border-radius: 4px;
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-#uk-apply:hover { background: #3aabff; border-color: #3aabff; }
-
-/* ── FLÄCHE ── */
-#btn-flaeche {
-  background: rgba(11,14,20,0.88);
-  color: var(--muted);
-}
-#btn-flaeche:hover { color: var(--text); border-color: var(--muted); }
-#btn-flaeche.active {
-  background: rgba(255,60,60,0.15);
-  color: #ff6060;
-  border-color: #ff6060;
-}
-
-#area-info {
-  display: none;
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 500;
-  background: rgba(11,14,20,0.92);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 7px 16px;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  color: var(--text);
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-  white-space: nowrap;
-}
-#area-info.visible { display: block; }
-
-#area-result {
-  display: none;
-  position: absolute;
-  bottom: 32px;
-  left: 20px;
-  z-index: 500;
-  background: rgba(11,14,20,0.88);
-  border: 1px solid rgba(255,68,68,0.4);
-  border-radius: 5px;
-  padding: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #ff8080;
-  backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-#area-result.visible { display: block; }
-
-/* Leaflet overrides */
-.leaflet-control-zoom { border: 1px solid var(--border) !important; margin-top: 58px !important; }
-.leaflet-control-zoom a { background: rgba(11,14,20,0.9) !important; color: var(--text) !important; border-color: var(--border) !important; }
-.leaflet-control-zoom a:hover { color: var(--accent) !important; }
-.leaflet-bar { box-shadow: none !important; }
+/* Leaflet */
+.leaflet-control-zoom{border:1px solid var(--border)!important;margin-top:58px!important;}
+.leaflet-control-zoom a{background:rgba(10,13,18,.9)!important;color:var(--text)!important;border-color:var(--border)!important;}
+.leaflet-control-zoom a:hover{color:var(--accent)!important;}
+.leaflet-bar{box-shadow:none!important;}
 </style>
 </head>
 <body>
+<div id="app">
+  <header>
+    <div class="logo">GELÄNDE<span>SCHNITT</span></div>
+    <div class="header-status">
+      <span><span class="dot" id="dot-a"></span><span id="lbl-a">Punkt A: —</span></span>
+      <span><span class="dot" id="dot-b"></span><span id="lbl-b">Punkt B: —</span></span>
+    </div>
+  </header>
 
-<div id="map"></div>
+  <div id="main">
+    <!-- MAP -->
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div class="map-overlay" id="instruction">Klick → Punkt A setzen</div>
+      <div class="map-overlay" id="search-box">
+        <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="40"/>
+        <button id="search-btn">→</button>
+      </div>
+      <div class="map-overlay" id="area-badge">⬡ <span id="area-m2">—</span></div>
+      <div id="map-btns">
+        <button class="map-btn" id="btn-reset">↺ Zurücksetzen</button>
+        <button class="map-btn primary" id="btn-profile" disabled>Gelände ausgeben</button>
+      </div>
+    </div>
 
-<div id="header">
-  <div class="logo">GELÄNDE<span>SCHNITT</span></div>
-  <div id="header-status">
-    <span><span class="dot" id="dot-a"></span><span id="lbl-a">Punkt A: —</span></span>
-    <span><span class="dot" id="dot-b"></span><span id="lbl-b">Punkt B: —</span></span>
+    <!-- RIGHT PANEL -->
+    <div id="panel">
+
+      <!-- ACCORDION: Unterkonstruktion -->
+      <div class="p-section">
+        <div class="acc-header" id="acc-uk-hdr">
+          <div class="acc-title">Unterkonstruktion</div>
+          <div class="acc-arrow" id="acc-uk-arrow">▼</div>
+        </div>
+        <div class="acc-body" id="acc-uk-body">
+          <div class="acc-inner">
+            <div class="field">
+              <div class="field-label">Modulabmaß</div>
+              <select class="fsel" id="uk-modul" onchange="ukChange()">
+                <option value="1134">1134 mm × 2382 mm</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Modulanordnung</div>
+              <select class="fsel" id="uk-anord" onchange="ukChange()">
+                <option value="4">4-Landscape</option>
+                <option value="5">5-Landscape</option>
+                <option value="6" selected>6-Landscape</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Modulabstand vertikal</div>
+              <select class="fsel" id="uk-vspalt" onchange="ukChange()">
+                <option value="20" selected>20 mm</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Modulabstand horizontal</div>
+              <select class="fsel" id="uk-hspalt" onchange="ukChange()">
+                <option value="20" selected>20 mm</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Anstellwinkel</div>
+              <select class="fsel" id="uk-winkel" onchange="ukChange()">
+                <option value="14">14°</option>
+                <option value="18" selected>18°</option>
+                <option value="20">20°</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Abstand Modulunterkante</div>
+              <select class="fsel" id="uk-uk" onchange="ukChange()">
+                <option value="500">0,5 m</option>
+                <option value="800" selected>0,8 m</option>
+                <option value="1000">1,0 m</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Reihenabstand</div>
+              <select class="fsel" id="uk-reihe" onchange="ukChange()">
+                <option value="2">2,0 m</option>
+                <option value="2.5" selected>2,5 m</option>
+                <option value="3">3,0 m</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-label">Randabstand</div>
+              <select class="fsel" id="uk-rand" onchange="ukChange()">
+                <option value="3">3 m</option>
+                <option value="4" selected>4 m</option>
+                <option value="5">5 m</option>
+              </select>
+            </div>
+          </div>
+          <!-- Schnitt Vorschau -->
+          <div id="schnitt-wrap">
+            <div id="schnitt-label">Tischschnitt Vorschau</div>
+            <svg id="schnitt-svg" viewBox="0 0 260 130" height="110"></svg>
+            <div id="schnitt-vals">
+              <div class="sv"><div class="sv-label">Sehnenlänge</div><div class="sv-val" id="sv-sehne">—</div></div>
+              <div class="sv"><div class="sv-label">Tiefe (proj.)</div><div class="sv-val" id="sv-tiefe">—</div></div>
+              <div class="sv"><div class="sv-label">Winkel</div><div class="sv-val" id="sv-winkel">—</div></div>
+              <div class="sv"><div class="sv-label">UK vorne</div><div class="sv-val" id="sv-uk">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL ACTIONS -->
+      <div id="panel-actions">
+        <button class="p-btn" id="btn-draw-area">⬡ Fläche einzeichnen</button>
+        <div class="p-divider"></div>
+        <button class="p-btn green" id="btn-belegen" disabled>⚡ Feld belegen</button>
+        <button class="p-btn blue" id="btn-update" disabled>↺ Update Belegung</button>
+        <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
+        <div class="p-divider"></div>
+        <button class="p-btn" id="btn-gelände" disabled style="opacity:.3;">Gelände ausgeben</button>
+      </div>
+
+      <!-- STATS -->
+      <div id="field-stats">
+        <div class="stat-line">Fläche: <span id="st-area">—</span></div>
+        <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
+        <div class="stat-line">Module: <span id="st-mods">—</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
-
-<div id="area-info">Fläche: — m²</div>
-<div id="area-result"></div>
-<div id="search-box">
-  <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="20"/>
-  <button id="btn-search">→</button>
-</div>
-
-<div id="floating-btns">
-  <button class="flt-btn" id="btn-reset">↺ Zurücksetzen</button>
-  <button class="flt-btn" id="btn-profile" disabled>Gelände ausgeben</button>
-  <button class="flt-btn" id="btn-flaeche">⬡ Fläche definieren</button>
-</div>
-
-<!-- MODAL -->
-<div id="modal-overlay">
-  <div id="modal">
-    <div id="modal-header">
-      <h2 id="modal-title">Geländeprofil</h2>
-      <button id="modal-close">✕ Schließen</button>
+<!-- MODALS -->
+<!-- Terrain modal -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(5,8,12,.82);backdrop-filter:blur(5px);align-items:center;justify-content:center;">
+  <div id="modal" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;width:min(94vw,1100px);height:min(88vh,700px);display:grid;grid-template-rows:52px 1fr 60px;overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);">
+      <div style="font-family:var(--font);font-size:.95rem;font-weight:600;" id="modal-title">Geländeprofil</div>
+      <button onclick="closeModal()" style="background:none;border:1px solid transparent;color:var(--muted);font-size:1rem;cursor:pointer;padding:5px 10px;border-radius:4px;font-family:var(--mono);">✕ Schließen</button>
     </div>
-    <div id="modal-chart-wrap">
-      <canvas id="modal-chart"></canvas>
-    </div>
-    <div id="modal-footer">
-      <div class="modal-stat">
-        <div class="modal-stat-label">Distanz</div>
-        <div class="modal-stat-val green" id="modal-dist">—</div>
+    <div style="padding:20px 28px 12px;position:relative;min-height:0;"><canvas id="modal-chart" style="width:100%!important;height:100%!important;"></canvas></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;border-top:1px solid var(--border);">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
+        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Distanz</div>
+        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--accent);" id="modal-dist">—</div>
       </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">Δ Höhe</div>
-        <div class="modal-stat-val blue" id="modal-delta">—</div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
+        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Δ Höhe</div>
+        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--accent2);" id="modal-delta">—</div>
       </div>
-      <div class="modal-stat">
-        <div class="modal-stat-label">Max. Höhe</div>
-        <div class="modal-stat-val warn" id="modal-max">—</div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
+        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Max. Höhe</div>
+        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--warn);" id="modal-max">—</div>
       </div>
-      <div class="modal-stat" style="border-left:1px solid var(--border);">
-        <button id="btn-uk" class="flt-btn" style="padding:8px 20px;font-size:0.76rem;background:var(--accent2);color:#fff;border-color:var(--accent2);">⚡ UK belegen</button>
+      <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;">
+        <button id="btn-uk-modal" onclick="closeModal()" style="padding:7px 18px;background:var(--accent2);color:#fff;border:none;border-radius:4px;font-family:var(--mono);font-size:.74rem;cursor:pointer;">⚡ UK belegen</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- UK CONFIG MODAL -->
-<div id="uk-overlay">
-  <div id="uk-modal">
-    <div id="uk-header">
-      <h2>UK-Randbedingungen</h2>
-      <button id="uk-close">✕</button>
-    </div>
-    <div id="uk-content">
-      <div id="uk-body">
-        <div class="uk-field">
-          <div class="uk-label">Modulabmaß</div>
-          <select class="uk-select" id="uk-modul" onchange="ukDraw()">
-            <option value="1134">1134 mm × 2382 mm</option>
-          </select>
-        </div>
-        <div class="uk-field">
-          <div class="uk-label">Modulanordnung</div>
-          <select class="uk-select" id="uk-anordnung" onchange="ukDraw()">
-            <option value="4">4-Landscape</option>
-            <option value="5">5-Landscape</option>
-            <option value="6" selected>6-Landscape</option>
-          </select>
-        </div>
-        <div class="uk-field">
-          <div class="uk-label">Modulabstand vertikal</div>
-          <select class="uk-select" id="uk-spalt" onchange="ukDraw()">
-            <option value="20" selected>20 mm</option>
-          </select>
-        </div>
-        <div class="uk-field">
-          <div class="uk-label">Anstellwinkel</div>
-          <select class="uk-select" id="uk-winkel" onchange="ukDraw()">
-            <option value="14">14°</option>
-            <option value="18" selected>18°</option>
-            <option value="20">20°</option>
-          </select>
-        </div>
-        <div class="uk-field">
-          <div class="uk-label">Abstand Modulunterkante</div>
-          <select class="uk-select" id="uk-uk" onchange="ukDraw()">
-            <option value="500">0,5 m</option>
-            <option value="800" selected>0,8 m</option>
-            <option value="1000">1,0 m</option>
-          </select>
-        </div>
-        <div class="uk-field">
-          <div class="uk-label">Reihenabstand</div>
-          <select class="uk-select" id="uk-reihe" onchange="ukDraw()">
-            <option value="2000">2,0 m</option>
-            <option value="2500" selected>2,5 m</option>
-            <option value="3000">3,0 m</option>
-          </select>
-        </div>
-      </div>
-      <div id="uk-preview">
-        <div id="uk-preview-title">Vorschau Gestellschnitt</div>
-        <svg id="uk-svg" viewBox="0 0 500 220" role="img">
-          <defs>
-            <marker id="uk-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </marker>
-          </defs>
-          <g id="uk-g"></g>
-        </svg>
-      </div>
-    </div>
-    <div id="uk-footer">
-      <button id="uk-cancel">Abbrechen</button>
-      <button id="uk-apply">Übernehmen</button>
-    </div>
-  </div>
-</div>
-
-<!-- LOADING -->
-<div id="loading">
-  <div class="spinner"></div>
+<!-- Loading -->
+<div id="loading" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(5,8,12,.7);backdrop-filter:blur(3px);align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:var(--mono);font-size:.8rem;color:var(--muted);">
+  <div style="width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
   <span>Höhendaten werden geladen…</span>
 </div>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
 
 <script>
-// ── MAP ────────────────────────────────────────────────────────────────────
-const map = L.map('map', { zoomControl: true }).setView([47.5, 10.5], 9);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles © Esri', maxZoom: 19
-}).addTo(map);
+const MOD_B=2.382,MOD_H=1.134,MOD_MIN=6;
 
-// ── STATE ──────────────────────────────────────────────────────────────────
-let pointA = null, pointB = null;
-let markerA = null, markerB = null;
-let polyline = null;
-let chart = null;
-let phase = 'A';
+// ── MAP ──────────────────────────────────────────────────────────────────
+const map=L.map('map',{zoomControl:true}).setView([47.5,10.5],9);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(map);
 
-// ── HELPERS ────────────────────────────────────────────────────────────────
-function fmt(ll) { return `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`; }
+// ── STATE ─────────────────────────────────────────────────────────────────
+let pointA=null,pointB=null,markerA=null,markerB=null,polyline=null,terrainChart=null,phase='A';
+let areaMode=false,areaPoints=[],areaMarkers=[],areaPolyline=null,areaPolygon=null;
+let fieldRows=[],fieldLayers=[];
+let dirtyField=false;
 
-function haversine(a, b) {
-  const R = 6371000;
-  const dLat = (b.lat - a.lat) * Math.PI / 180;
-  const dLng = (b.lng - a.lng) * Math.PI / 180;
-  const s = Math.sin(dLat/2)**2 + Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+// ── ACCORDION ─────────────────────────────────────────────────────────────
+const accHdr=document.getElementById('acc-uk-hdr');
+const accBody=document.getElementById('acc-uk-body');
+const accArrow=document.getElementById('acc-uk-arrow');
+accHdr.addEventListener('click',()=>{
+  const open=accBody.classList.toggle('open');
+  accArrow.classList.toggle('open',open);
+  if(open) drawSchnitt();
+});
+// Open by default
+accBody.classList.add('open');
+accArrow.classList.add('open');
+
+// ── UK CONFIG ─────────────────────────────────────────────────────────────
+function getUK(){
+  return{
+    n:parseInt(document.getElementById('uk-anord').value),
+    modH:parseFloat(document.getElementById('uk-modul').value),
+    vspalt:parseFloat(document.getElementById('uk-vspalt').value)/1000,
+    hspalt:parseFloat(document.getElementById('uk-hspalt').value)/1000,
+    winkel:parseFloat(document.getElementById('uk-winkel').value),
+    uk:parseFloat(document.getElementById('uk-uk').value)/1000,
+    reihe:parseFloat(document.getElementById('uk-reihe').value),
+    rand:parseFloat(document.getElementById('uk-rand').value),
+  };
 }
 
-function lerp(a, b, t) { return { lat: a.lat+(b.lat-a.lat)*t, lng: a.lng+(b.lng-a.lng)*t }; }
-
-function fmtDist(m) { return m >= 1000 ? `${(m/1000).toFixed(2)} km` : `${Math.round(m)} m`; }
-
-function makeIcon(cls) {
-  return L.divIcon({ className:'', html:`<div class="marker-pin ${cls}"></div>`, iconSize:[20,20], iconAnchor:[10,20] });
+function ukChange(){
+  drawSchnitt();
+  if(fieldRows.length>0){
+    dirtyField=true;
+    document.getElementById('btn-update').disabled=false;
+  }
 }
 
-// ── MAP CLICK ──────────────────────────────────────────────────────────────
-map.on('click', e => {
-  if (phase === 'done') return;
-  if (phase === 'A') {
-    pointA = e.latlng;
-    if (markerA) map.removeLayer(markerA);
-    markerA = L.marker(pointA, { icon: makeIcon('a') }).addTo(map);
-    document.getElementById('dot-a').classList.add('active');
-    document.getElementById('lbl-a').textContent = `A: ${fmt(pointA)}`;
-    document.getElementById('instruction').textContent = 'Klick auf die Karte → Punkt B setzen';
-    phase = 'B';
-  } else if (phase === 'B') {
-    pointB = e.latlng;
-    if (markerB) map.removeLayer(markerB);
-    markerB = L.marker(pointB, { icon: makeIcon('b') }).addTo(map);
-    document.getElementById('dot-b').classList.add('active');
-    document.getElementById('lbl-b').textContent = `B: ${fmt(pointB)}`;
-    if (polyline) map.removeLayer(polyline);
-    polyline = L.polyline([pointA, pointB], { color:'#00e5a0', weight:2, dashArray:'6 4', opacity:0.9 }).addTo(map);
-    map.fitBounds(L.latLngBounds([pointA, pointB]), { padding:[80,80] });
+// ── TISCHSCHNITT ──────────────────────────────────────────────────────────
+function drawSchnitt(){
+  const{n,vspalt,winkel,uk}=getUK();
+  const SEHNE=n*MOD_H+(n-1)*vspalt;
+  const RAD=winkel*Math.PI/180;
+  const GY=105,OX=20,sc=210/SEHNE,p=m=>m*sc;
+  const anh=p(uk);
+  const x1=OX,y1=GY-anh,x2=x1+p(SEHNE)*Math.cos(RAD),y2=y1-p(SEHNE)*Math.sin(RAD);
+  const pVx=x1+(x2-x1)*.15,pVy=y1+(y2-y1)*.15;
+  const pHx=x1+(x2-x1)*.85,pHy=y1+(y2-y1)*.85;
+  const col='#4a9eff';const sw=2.5;
+  let s='';
+  s+=`<line x1="${OX-8}" y1="${GY}" x2="${x2+12}" y2="${GY}" stroke="#232f42" stroke-width="1"/>`;
+  s+=`<line x1="${pVx}" y1="${pVy}" x2="${pVx}" y2="${GY}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
+  s+=`<line x1="${pHx}" y1="${pHy}" x2="${pHx}" y2="${GY}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
+  s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
+  if(winkel>0){
+    const wR=18;
+    s+=`<line x1="${pVx}" y1="${pVy}" x2="${pVx+wR+12}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5"/>`;
+    s+=`<path d="M ${pVx+wR} ${pVy} A ${wR} ${wR} 0 0 1 ${pVx+wR*Math.cos(RAD)} ${pVy+wR*Math.sin(RAD)}" fill="none" stroke="#2d3e56" stroke-width=".5"/>`;
+    s+=`<text x="${pVx+wR+5}" y="${pVy+13}" font-size="9" fill="#5a7090" font-family="DM Mono,monospace">${winkel}°</text>`;
+  }
+  const bx=pVx-14;
+  s+=`<line x1="${bx}" y1="${GY}" x2="${bx}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5"/>`;
+  s+=`<line x1="${bx}" y1="${GY}" x2="${pVx}" y2="${GY}" stroke="#2d3e56" stroke-width=".5" stroke-dasharray="2 2"/>`;
+  s+=`<line x1="${bx}" y1="${pVy}" x2="${pVx}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5" stroke-dasharray="2 2"/>`;
+  s+=`<text x="${bx-3}" y="${(GY+pVy)/2}" text-anchor="end" dominant-baseline="central" font-size="8" fill="#5a7090" font-family="DM Mono,monospace">${uk.toFixed(1)}m</text>`;
+  document.getElementById('schnitt-svg').innerHTML=s;
+  document.getElementById('sv-sehne').textContent=`${SEHNE.toFixed(3)} m`;
+  document.getElementById('sv-tiefe').textContent=`${(SEHNE*Math.cos(RAD)).toFixed(3)} m`;
+  document.getElementById('sv-winkel').textContent=`${winkel}°`;
+  document.getElementById('sv-uk').textContent=`${uk.toFixed(2)} m`;
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────
+async function searchLocation(q){
+  const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&limit=1&format=json`;
+  const res=await fetch(url,{headers:{'Accept-Language':'de'}});
+  const data=await res.json();
+  if(!data.length){alert('Ort nicht gefunden.');return;}
+  map.setView([parseFloat(data[0].lat),parseFloat(data[0].lon)],14,{animate:true});
+}
+document.getElementById('search-btn').addEventListener('click',()=>{const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);});
+document.getElementById('plz-input').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);}});
+
+// ── TERRAIN POINTS ────────────────────────────────────────────────────────
+function makeIcon(cls){return L.divIcon({className:'',html:`<div class="mkr ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,18]});}
+function fmt(ll){return`${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;}
+function haversine(a,b){const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;const s=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));}
+function lerp(a,b,t){return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t};}
+function fmtDist(m){return m>=1000?`${(m/1000).toFixed(2)} km`:`${Math.round(m)} m`;}
+
+map.on('click',e=>{
+  if(areaMode){
+    areaPoints.push(e.latlng);
+    const m=L.circleMarker(e.latlng,{radius:4,color:'#ff4444',fillColor:'#ff4444',fillOpacity:1,weight:1}).addTo(map);
+    areaMarkers.push(m);
+    updateAreaPreview();
+    return;
+  }
+  if(phase==='done')return;
+  if(phase==='A'){
+    pointA=e.latlng;
+    if(markerA)map.removeLayer(markerA);
+    markerA=L.marker(pointA,{icon:makeIcon('a')}).addTo(map);
+    document.getElementById('dot-a').classList.add('on');
+    document.getElementById('lbl-a').textContent=`A: ${fmt(pointA)}`;
+    document.getElementById('instruction').textContent='Klick → Punkt B setzen';
+    phase='B';
+  } else if(phase==='B'){
+    pointB=e.latlng;
+    if(markerB)map.removeLayer(markerB);
+    markerB=L.marker(pointB,{icon:makeIcon('b')}).addTo(map);
+    document.getElementById('dot-b').classList.add('on');
+    document.getElementById('lbl-b').textContent=`B: ${fmt(pointB)}`;
+    if(polyline)map.removeLayer(polyline);
+    polyline=L.polyline([pointA,pointB],{color:'#00e5a0',weight:2,dashArray:'6 4',opacity:.9}).addTo(map);
+    map.fitBounds(L.latLngBounds([pointA,pointB]),{padding:[80,80]});
     document.getElementById('instruction').classList.add('hidden');
-    document.getElementById('btn-profile').disabled = false;
-    phase = 'done';
+    document.getElementById('btn-profile').disabled=false;
+    phase='done';
   }
 });
 
-// ── ELEVATION APIs ─────────────────────────────────────────────────────────
-async function fetchOpenMeteo(points) {
-  const lats = points.map(p => p.lat.toFixed(6)).join(',');
-  const lngs = points.map(p => p.lng.toFixed(6)).join(',');
-  const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
-  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-  const data = await res.json();
-  if (!data.elevation) throw new Error('Kein elevation-Feld');
+// ── ELEVATION ─────────────────────────────────────────────────────────────
+async function fetchOpenMeteo(points){
+  const lats=points.map(p=>p.lat.toFixed(6)).join(',');
+  const lngs=points.map(p=>p.lng.toFixed(6)).join(',');
+  const res=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
+  if(!res.ok)throw new Error(`Open-Meteo ${res.status}`);
+  const data=await res.json();
+  if(!data.elevation)throw new Error('Kein elevation-Feld');
   return data.elevation;
 }
-
-async function fetchOpenTopoChunk(points) {
-  const loc = points.map(p => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-  const res = await fetch(`https://api.opentopodata.org/v1/srtm90m?locations=${encodeURIComponent(loc)}`);
-  if (!res.ok) throw new Error(`OpenTopoData ${res.status}`);
-  const data = await res.json();
-  if (data.status !== 'OK') throw new Error('OpenTopoData: ' + data.status);
-  return data.results.map(r => r.elevation ?? 0);
+function chunkArr(arr,n){const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;}
+async function fetchElevation(points){
+  const chunks=chunkArr(points,100);
+  const r=await Promise.all(chunks.map(fetchOpenMeteo));
+  return r.flat();
 }
-
-function chunkArr(arr, n) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i+n));
-  return out;
-}
-
-async function fetchElevation(points) {
-  const chunks = chunkArr(points, 100);
-  try {
-    const r = await Promise.all(chunks.map(fetchOpenMeteo));
-    return r.flat();
-  } catch(e1) {
-    try {
-      const r = await Promise.all(chunks.map(fetchOpenTopoChunk));
-      return r.flat();
-    } catch(e2) {
-      throw new Error('Höhendaten nicht verfügbar.');
-    }
-  }
-}
-
-function gaussSmooth(data, radius) {
-  return data.map((_, i) => {
-    let sum = 0, weight = 0;
-    for (let j = -radius; j <= radius; j++) {
-      const idx = Math.min(Math.max(i+j, 0), data.length-1);
-      const w = Math.exp(-(j*j) / (2*radius*radius/4));
-      sum += data[idx] * w; weight += w;
-    }
-    return sum / weight;
+function gaussSmooth(data,radius){
+  return data.map((_,i)=>{
+    let sum=0,weight=0;
+    for(let j=-radius;j<=radius;j++){const idx=Math.min(Math.max(i+j,0),data.length-1);const w=Math.exp(-(j*j)/(2*radius*radius/4));sum+=data[idx]*w;weight+=w;}
+    return sum/weight;
   });
 }
 
-// ── PROFILE ────────────────────────────────────────────────────────────────
-document.getElementById('btn-profile').addEventListener('click', async () => {
-  const btn = document.getElementById('btn-profile');
-  btn.disabled = true;
-  document.getElementById('loading').classList.add('active');
-
-  const SAMPLES = 99;
-  const dist = haversine(pointA, pointB);
-  const pts = Array.from({length: SAMPLES+1}, (_, i) => lerp(pointA, pointB, i/SAMPLES));
-  const distances = pts.map((_, i) => ((i/SAMPLES)*dist/1000).toFixed(4));
-
-  try {
-    const raw = await fetchElevation(pts);
-    const elevations = gaussSmooth(raw, 8);
-
-    const maxEl = Math.max(...elevations);
-    const minEl = Math.min(...elevations);
-    const elA = elevations[0];
-    const elB = elevations[elevations.length-1];
-    // True-scale Y-axis: the chart is ~560px tall, dist maps to full width (~1000px)
-    // So pixel-per-meter vertical = pixel-per-meter horizontal * (chartH/chartW)
-    // We compute what vertical span corresponds to the horizontal distance at true scale,
-    // then use whichever is larger: actual range or true-scale span.
-    const actualRange = maxEl - minEl;
-    // Pad = 40% of range, minimum 5m — keeps curve well within chart without wasted space
-    const pad = Math.max(5, actualRange * 0.4);
-    const midEl = (maxEl + minEl) / 2;
-    const displayRange = actualRange + pad * 2;
-
-    document.getElementById('modal-dist').textContent = fmtDist(dist);
-    document.getElementById('modal-delta').textContent = `${elB-elA >= 0 ? '+' : ''}${Math.round(elB-elA)} m`;
-    document.getElementById('modal-max').textContent = `${Math.round(maxEl)} m`;
-    document.getElementById('modal-title').textContent = `Geländeprofil · ${fmtDist(dist)}`;
-
-    document.getElementById('loading').classList.remove('active');
-    document.getElementById('modal-overlay').classList.add('open');
-
-    if (chart) chart.destroy();
-    const ctx = document.getElementById('modal-chart').getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 0, 480);
-    grad.addColorStop(0, 'rgba(0,229,160,0.28)');
-    grad.addColorStop(1, 'rgba(0,229,160,0.01)');
-
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: distances,
-        datasets: [{
-          data: elevations,
-          borderColor: '#00e5a0',
-          borderWidth: 2,
-          backgroundColor: grad,
-          fill: true,
-          pointRadius: 0,
-          tension: 0.5,
-          cubicInterpolationMode: 'monotone'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 700 },
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#13181f',
-            borderColor: '#2a3545',
-            borderWidth: 1,
-            titleColor: '#6b7a8d',
-            bodyColor: '#e8edf4',
-            titleFont: { family: 'DM Mono', size: 11 },
-            bodyFont: { family: 'DM Mono', size: 13 },
-            callbacks: {
-              title: items => `${parseFloat(items[0].label).toFixed(3)} km`,
-              label: item => `  ${Math.round(item.raw)} m ü. NN`
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, maxTicksLimit:10,
-              callback: (_, i) => distances[i] ? `${parseFloat(distances[i]).toFixed(2)}km` : '' },
-            grid: { color:'#1a2130' }, border: { color:'#2a3545' }
-          },
-          y: {
-            ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, callback: v => `${Math.round(v)}m` },
-            grid: { color:'#1a2130' }, border: { color:'#2a3545' },
-            min: Math.max(0, midEl - displayRange / 2),
-            max: midEl + displayRange / 2
-          }
-        }
-      }
-    });
-  } catch(err) {
-    document.getElementById('loading').classList.remove('active');
-    alert('Fehler beim Laden der Höhendaten. Bitte erneut versuchen.');
-    console.error(err);
-  } finally {
-    btn.disabled = false;
+// ── PROFILE ───────────────────────────────────────────────────────────────
+document.getElementById('btn-profile').addEventListener('click',async()=>{
+  document.getElementById('loading').style.display='flex';
+  const dist=haversine(pointA,pointB);
+  const pts=Array.from({length:100},(_, i)=>lerp(pointA,pointB,i/99));
+  const distances=pts.map((_,i)=>((i/99)*dist/1000).toFixed(4));
+  try{
+    const raw=await fetchElevation(pts);
+    const elevations=gaussSmooth(raw,8);
+    const maxEl=Math.max(...elevations),minEl=Math.min(...elevations);
+    const elA=elevations[0],elB=elevations[elevations.length-1];
+    const chartH=document.getElementById('modal-chart').offsetHeight||480;
+    const chartW=document.getElementById('modal-chart').offsetWidth||1000;
+    const trueSpan=dist*(chartH/chartW);
+    const actualRange=maxEl-minEl;
+    const displayRange=Math.max(actualRange,trueSpan);
+    const pad=Math.max(2,displayRange*.25);
+    const midEl=(maxEl+minEl)/2;
+    document.getElementById('modal-dist').textContent=fmtDist(dist);
+    document.getElementById('modal-delta').textContent=`${elB-elA>=0?'+':''}${Math.round(elB-elA)} m`;
+    document.getElementById('modal-max').textContent=`${Math.round(maxEl)} m`;
+    document.getElementById('modal-title').textContent=`Geländeprofil · ${fmtDist(dist)}`;
+    document.getElementById('loading').style.display='none';
+    document.getElementById('modal-overlay').style.display='flex';
+    if(terrainChart)terrainChart.destroy();
+    const ctx=document.getElementById('modal-chart').getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,0,480);
+    grad.addColorStop(0,'rgba(0,229,160,.28)');grad.addColorStop(1,'rgba(0,229,160,.01)');
+    terrainChart=new Chart(ctx,{type:'line',data:{labels:distances,datasets:[{data:elevations,borderColor:'#00e5a0',borderWidth:2,backgroundColor:grad,fill:true,pointRadius:0,tension:.5,cubicInterpolationMode:'monotone'}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#13181f',borderColor:'#232f42',borderWidth:1,titleColor:'#5a7090',bodyColor:'#dde6f0',callbacks:{title:i=>`${parseFloat(i[0].label).toFixed(3)} km`,label:i=>`  ${Math.round(i.raw)} m ü. NN`}}},scales:{x:{ticks:{color:'#5a7090',font:{family:'DM Mono',size:11},maxTicksLimit:10,callback:(_,i)=>distances[i]?`${parseFloat(distances[i]).toFixed(2)}km`:''},grid:{color:'#161d28'},border:{color:'#232f42'}},y:{ticks:{color:'#5a7090',font:{family:'DM Mono',size:11},callback:v=>`${Math.round(v)}m`},grid:{color:'#161d28'},border:{color:'#232f42'},min:Math.max(0,midEl-displayRange/2-pad),max:midEl+displayRange/2+pad}}}});
+  }catch(err){
+    document.getElementById('loading').style.display='none';
+    alert('Fehler beim Laden der Höhendaten.');
   }
 });
+function closeModal(){document.getElementById('modal-overlay').style.display='none';}
 
-// ── MODAL CLOSE ────────────────────────────────────────────────────────────
-document.getElementById('modal-close').addEventListener('click', () => {
-  document.getElementById('modal-overlay').classList.remove('open');
-});
-document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-overlay'))
-    document.getElementById('modal-overlay').classList.remove('open');
-});
-
-// ── RESET ──────────────────────────────────────────────────────────────────
-document.getElementById('btn-reset').addEventListener('click', () => {
-  if (markerA) { map.removeLayer(markerA); markerA = null; }
-  if (markerB) { map.removeLayer(markerB); markerB = null; }
-  if (polyline) { map.removeLayer(polyline); polyline = null; }
-  if (chart) { chart.destroy(); chart = null; }
-  pointA = pointB = null;
-  phase = 'A';
-  document.getElementById('dot-a').classList.remove('active');
-  document.getElementById('dot-b').classList.remove('active');
-  document.getElementById('lbl-a').textContent = 'Punkt A: —';
-  document.getElementById('lbl-b').textContent = 'Punkt B: —';
-  document.getElementById('btn-profile').disabled = true;
-  const instr = document.getElementById('instruction');
-  instr.textContent = 'Klick auf die Karte → Punkt A setzen';
-  instr.classList.remove('hidden');
-  document.getElementById('modal-overlay').classList.remove('open');
+// ── RESET ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  if(markerA){map.removeLayer(markerA);markerA=null;}
+  if(markerB){map.removeLayer(markerB);markerB=null;}
+  if(polyline){map.removeLayer(polyline);polyline=null;}
+  if(terrainChart){terrainChart.destroy();terrainChart=null;}
+  pointA=pointB=null;phase='A';
+  document.getElementById('dot-a').classList.remove('on');
+  document.getElementById('dot-b').classList.remove('on');
+  document.getElementById('lbl-a').textContent='Punkt A: —';
+  document.getElementById('lbl-b').textContent='Punkt B: —';
+  document.getElementById('btn-profile').disabled=true;
+  document.getElementById('instruction').textContent='Klick → Punkt A setzen';
+  document.getElementById('instruction').classList.remove('hidden');
+  closeModal();
+  resetArea();
 });
 
-// ── SEARCH ─────────────────────────────────────────────────────────────────
-async function searchLocation(q) {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&limit=1&format=json`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'de' } });
-  const data = await res.json();
-  if (!data.length) { alert('Ort nicht gefunden.'); return; }
-  map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 14, { animate: true });
+// ── AREA ──────────────────────────────────────────────────────────────────
+function areaM2(pts){
+  let area=0;const R=6371000,latM=Math.PI/180*R;
+  for(let i=0;i<pts.length;i++){
+    const j=(i+1)%pts.length;
+    const xi=pts[i].lng*Math.PI/180*R*Math.cos(pts[i].lat*Math.PI/180),yi=pts[i].lat*latM;
+    const xj=pts[j].lng*Math.PI/180*R*Math.cos(pts[j].lat*Math.PI/180),yj=pts[j].lat*latM;
+    area+=xi*yj-xj*yi;
+  }
+  return Math.abs(area/2);
 }
-
-document.getElementById('btn-search').addEventListener('click', () => {
-  const q = document.getElementById('plz-input').value.trim();
-  if (q) searchLocation(q);
-});
-document.getElementById('plz-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { const q = document.getElementById('plz-input').value.trim(); if (q) searchLocation(q); }
-});
-// ── UK MODAL ───────────────────────────────────────────────────────────────
-const UK_FIXED_SC = (() => {
-  const maxLaengeHor = (6*1134+5*20)*Math.cos(20*Math.PI/180);
-  return 380 / (2*maxLaengeHor + 3000);
-})();
-
-function ukDraw() {
-  const n       = parseInt(document.getElementById('uk-anordnung').value);
-  const modH    = parseFloat(document.getElementById('uk-modul').value);
-  const winkel  = parseFloat(document.getElementById('uk-winkel').value);
-  const abstand = parseFloat(document.getElementById('uk-uk').value);
-  const spalt   = parseFloat(document.getElementById('uk-spalt').value);
-  const reihe   = parseFloat(document.getElementById('uk-reihe').value);
-
-  const LAENGE     = n*modH + (n-1)*spalt;
-  const RAD        = winkel*Math.PI/180;
-  const LAENGE_HOR = LAENGE*Math.cos(RAD);
-  const p          = mm => mm*UK_FIXED_SC;
-
-  const GY = 175;
-  const OX = 40;
-  const ox2 = OX + p(LAENGE_HOR) + p(reihe);
-
-  function drawTisch(ox) {
-    const x1=ox, y1=GY-p(abstand);
-    const x2=x1+p(LAENGE)*Math.cos(RAD), y2=y1-p(LAENGE)*Math.sin(RAD);
-    const pVx=x1+(x2-x1)*0.15, pVy=y1+(y2-y1)*0.15;
-    const pHx=x1+(x2-x1)*0.85, pHy=y1+(y2-y1)*0.85;
-    return {x1,y1,x2,y2,
-      svg:[
-        `<line x1="${pVx}" y1="${pVy}" x2="${pVx}" y2="${GY}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
-        `<line x1="${pHx}" y1="${pHy}" x2="${pHx}" y2="${GY}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
-        `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
-      ].join('')
-    };
+function updateAreaPreview(){
+  if(areaPolyline)map.removeLayer(areaPolyline);
+  if(areaPoints.length>1){
+    const pts=[...areaPoints,areaPoints[0]];
+    areaPolyline=L.polyline(pts,{color:'#ff4444',weight:2,dashArray:'5 4',opacity:.9}).addTo(map);
   }
-
-  const t1 = drawTisch(OX);
-  const t2 = drawTisch(ox2);
-
-  const dim = `stroke="#3a4a5a" stroke-width="0.5"`;
-  const tc  = `fill="#6b7a8d" font-size="10" font-family="DM Mono, monospace"`;
-
-  let svg = '';
-
-  // Boden
-  svg += `<line x1="${OX-10}" y1="${GY}" x2="${ox2+p(LAENGE_HOR)+20}" y2="${GY}" stroke="#2a3545" stroke-width="1"/>`;
-
-  // Tische
-  svg += t1.svg + t2.svg;
-
-  // Abstand Modulunterkante (vertikal links)
-  const bx = OX-18;
-  svg += `<line x1="${bx}" y1="${GY}" x2="${bx}" y2="${t1.y1}" ${dim} marker-start="url(#uk-arr)" marker-end="url(#uk-arr)"/>`;
-  svg += `<line x1="${bx}" y1="${GY}" x2="${OX}" y2="${GY}" ${dim} stroke-dasharray="2 2"/>`;
-  svg += `<line x1="${bx}" y1="${t1.y1}" x2="${OX}" y2="${t1.y1}" ${dim} stroke-dasharray="2 2"/>`;
-  svg += `<text x="${bx-3}" y="${(GY+t1.y1)/2}" text-anchor="end" dominant-baseline="central" ${tc}>${(abstand/1000).toFixed(1)} m</text>`;
-
-  // Reihenabstand (oben)
-  const topY = Math.min(t1.y2, t2.y2) - 14;
-  const ax1 = OX+p(LAENGE_HOR), ax2 = ox2;
-  svg += `<line x1="${ax1}" y1="${topY}" x2="${ax2}" y2="${topY}" ${dim} marker-start="url(#uk-arr)" marker-end="url(#uk-arr)"/>`;
-  svg += `<line x1="${ax1}" y1="${topY}" x2="${ax1}" y2="${t1.y2}" ${dim} stroke-dasharray="2 2"/>`;
-  svg += `<line x1="${ax2}" y1="${topY}" x2="${ax2}" y2="${t2.y1}" ${dim} stroke-dasharray="2 2"/>`;
-  svg += `<text x="${(ax1+ax2)/2}" y="${topY-6}" text-anchor="middle" ${tc}>${(reihe/1000).toFixed(1)} m</text>`;
-
-  // Winkel (unterhalb Modulplatte)
-  if (winkel > 0) {
-    const wR = 20;
-    svg += `<line x1="${t1.x1}" y1="${t1.y1}" x2="${t1.x1+wR+14}" y2="${t1.y1}" ${dim}/>`;
-    svg += `<path d="M ${t1.x1+wR} ${t1.y1} A ${wR} ${wR} 0 0 1 ${t1.x1+wR*Math.cos(RAD)} ${t1.y1+wR*Math.sin(RAD)}" fill="none" stroke="#3a4a5a" stroke-width="0.5"/>`;
-    svg += `<text x="${t1.x1+wR+6}" y="${t1.y1+12}" ${tc}>${winkel}°</text>`;
-  }
-
-  document.getElementById('uk-g').innerHTML = svg;
-}
-
-document.getElementById('btn-uk').addEventListener('click', () => {
-  document.getElementById('uk-overlay').classList.add('open');
-  ukDraw();
-});
-
-function closeUK() { document.getElementById('uk-overlay').classList.remove('open'); }
-
-document.getElementById('uk-close').addEventListener('click', closeUK);
-document.getElementById('uk-cancel').addEventListener('click', closeUK);
-document.getElementById('uk-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('uk-overlay')) closeUK();
-});
-
-document.getElementById('uk-apply').addEventListener('click', () => {
-  closeUK();
-});
-// ── FLÄCHE DEFINIEREN ─────────────────────────────────────────────────────
-let areaMode    = false;
-let areaPoints  = [];
-let areaTempMarkers = [];
-let areaPolyline = null;
-let areaPolygon  = null;
-
-function areaM2(pts) {
-  // Shoelace in Metern (approx. mit lat/lng → m Umrechnung)
-  let area = 0;
-  const n = pts.length;
-  const R = 6371000;
-  const latM = Math.PI / 180 * R;
-  for (let i = 0; i < n; i++) {
-    const j = (i+1) % n;
-    const xi = pts[i].lng * Math.PI/180 * R * Math.cos(pts[i].lat * Math.PI/180);
-    const yi = pts[i].lat * latM;
-    const xj = pts[j].lng * Math.PI/180 * R * Math.cos(pts[j].lat * Math.PI/180);
-    const yj = pts[j].lat * latM;
-    area += xi * yj - xj * yi;
-  }
-  return Math.abs(area / 2);
-}
-
-function updateAreaPreview() {
-  if (areaPolyline) map.removeLayer(areaPolyline);
-  if (areaPoints.length > 1) {
-    const pts = [...areaPoints, areaPoints[0]];
-    areaPolyline = L.polyline(pts, { color:'#ff4444', weight:2, dashArray:'5 4', opacity:0.9 }).addTo(map);
-  }
-  if (areaPoints.length >= 3) {
-    const m2 = areaM2(areaPoints);
-    const txt = m2 >= 10000
-      ? `Fläche: ${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`
-      : `Fläche: ${Math.round(m2).toLocaleString('de')} m²`;
-    document.getElementById('area-info').textContent = txt;
-    document.getElementById('area-info').classList.add('visible');
-  } else {
-    document.getElementById('area-info').textContent = 'Fläche: — m²';
+  if(areaPoints.length>=3){
+    const m2=areaM2(areaPoints);
+    const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
+    document.getElementById('area-m2').textContent=txt;
+    document.getElementById('area-badge').classList.add('show');
   }
 }
 
-function confirmArea() {
-  if (areaPoints.length < 3) return;
-  // Remove preview line
-  if (areaPolyline) { map.removeLayer(areaPolyline); areaPolyline = null; }
-  // Draw filled polygon
-  if (areaPolygon) map.removeLayer(areaPolygon);
-  areaPolygon = L.polygon(areaPoints, {
-    color: '#ff4444',
-    weight: 2,
-    fillColor: '#ff2222',
-    fillOpacity: 0.18,
-    opacity: 0.8
-  }).addTo(map);
-  // Clean up temp markers
-  areaTempMarkers.forEach(m => map.removeLayer(m));
-  areaTempMarkers = [];
-  // Exit area mode
-  areaMode = false;
-  areaPoints = [];
-  document.getElementById('btn-flaeche').classList.remove('active');
-  document.getElementById('btn-flaeche').textContent = '⬡ Fläche definieren';
+function confirmArea(){
+  if(areaPoints.length<3)return;
+  if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
+  if(areaPolygon)map.removeLayer(areaPolygon);
+  areaPolygon=L.polygon(areaPoints,{color:'#ff4444',weight:2,fillColor:'#ff2222',fillOpacity:.15,opacity:.8}).addTo(map);
+  areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
+  areaMode=false;
+  document.getElementById('btn-draw-area').classList.remove('active');
+  document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
   document.getElementById('instruction').classList.add('hidden');
-  document.getElementById('area-info').classList.remove('visible');
-  // Show persistent result bottom-left
-  const m2final = areaM2(areaPolygon.getLatLngs()[0]);
-  const txt = m2final >= 10000
-    ? `${(m2final/10000).toFixed(2)} ha`
-    : `${Math.round(m2final).toLocaleString('de')} m²`;
-  const res = document.getElementById('area-result');
-  res.textContent = `⬡ ${txt}`;
-  res.classList.add('visible');
+  document.getElementById('btn-belegen').disabled=false;
+  updateAreaStats();
 }
 
-document.getElementById('btn-flaeche').addEventListener('click', () => {
-  if (areaMode) {
-    // Cancel
-    areaMode = false;
-    areaPoints = [];
-    areaTempMarkers.forEach(m => map.removeLayer(m));
-    areaTempMarkers = [];
-    if (areaPolyline) { map.removeLayer(areaPolyline); areaPolyline = null; }
-    document.getElementById('btn-flaeche').classList.remove('active');
-    document.getElementById('btn-flaeche').textContent = '⬡ Fläche definieren';
+function updateAreaStats(){
+  if(!areaPoints.length)return;
+  const m2=areaM2(areaPoints);
+  const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`:`${Math.round(m2).toLocaleString('de')} m²`;
+  document.getElementById('area-m2').textContent=txt;
+  document.getElementById('area-badge').classList.add('show');
+  document.getElementById('st-area').textContent=txt;
+  document.getElementById('field-stats').classList.add('show');
+}
+
+function resetArea(){
+  areaMode=false;
+  areaPoints=[];
+  areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
+  if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
+  if(areaPolygon){map.removeLayer(areaPolygon);areaPolygon=null;}
+  document.getElementById('btn-draw-area').classList.remove('active');
+  document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
+  document.getElementById('area-badge').classList.remove('show');
+  document.getElementById('btn-belegen').disabled=true;
+  document.getElementById('btn-update').disabled=true;
+  document.getElementById('btn-clear').disabled=true;
+  document.getElementById('field-stats').classList.remove('show');
+  clearFieldLayers();
+}
+
+document.getElementById('btn-draw-area').addEventListener('click',()=>{
+  if(areaMode){
+    areaMode=false;areaPoints=[];
+    areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
+    if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
+    document.getElementById('btn-draw-area').classList.remove('active');
+    document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
     document.getElementById('instruction').classList.add('hidden');
-    document.getElementById('area-info').classList.remove('visible');
+    document.getElementById('area-badge').classList.remove('show');
   } else {
-    areaMode = true;
-    document.getElementById('btn-flaeche').classList.add('active');
-    document.getElementById('btn-flaeche').textContent = '✕ Abbrechen';
-    const instr = document.getElementById('instruction');
-    instr.textContent = 'Punkte klicken → Fläche zeichnen · Enter = bestätigen';
-    instr.classList.remove('hidden');
+    areaMode=true;
+    document.getElementById('btn-draw-area').classList.add('active');
+    document.getElementById('btn-draw-area').textContent='✕ Abbrechen';
+    document.getElementById('instruction').textContent='Punkte klicken → Fläche zeichnen · Enter = bestätigen';
+    document.getElementById('instruction').classList.remove('hidden');
   }
 });
 
-// Map click handler for area mode
-map.on('click', e => {
-  if (!areaMode) return;
-  areaPoints.push(e.latlng);
-  const m = L.circleMarker(e.latlng, {
-    radius: 4, color: '#ff4444', fillColor: '#ff4444', fillOpacity: 1, weight: 1
-  }).addTo(map);
-  areaTempMarkers.push(m);
-  updateAreaPreview();
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&areaMode)confirmArea();});
+
+// ── FIELD POPULATION ──────────────────────────────────────────────────────
+function signedAreaLocal(poly){let a=0;for(let i=0;i<poly.length;i++){const j=(i+1)%poly.length;a+=poly[i].x*poly[j].y-poly[j].x*poly[i].y;}return a/2;}
+
+function insetPolygon(poly,d){
+  const dir=signedAreaLocal(poly)>0?-1:1,n=poly.length,edges=[];
+  for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy),nx=(dy/len)*dir,ny=(-dx/len)*dir;edges.push({ax:a.x+nx*d,ay:a.y+ny*d,bx:b.x+nx*d,by:b.y+ny*d});}
+  const res=[];
+  for(let i=0;i<n;i++){const e1=edges[i],e2=edges[(i+1)%n],dx1=e1.bx-e1.ax,dy1=e1.by-e1.ay,dx2=e2.bx-e2.ax,dy2=e2.by-e2.ay,denom=dx1*dy2-dy1*dx2;if(Math.abs(denom)<1e-10)res.push({x:e1.bx,y:e1.by});else{const t=((e2.ax-e1.ax)*dy2-(e2.ay-e1.ay)*dx2)/denom;res.push({x:e1.ax+t*dx1,y:e1.ay+t*dy1});}}
+  return res;
+}
+
+function hCuts(poly,yy){const xs=[],n=poly.length;for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if((a.y<=yy&&b.y>yy)||(b.y<=yy&&a.y>yy))xs.push(a.x+(yy-a.y)/(b.y-a.y)*(b.x-a.x));}return xs.sort((a,b)=>a-b);}
+
+function pip(poly,px,py){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y;if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
+
+function rectIn(poly,x,y,w,h){const N=12;for(let i=0;i<=N;i++){const fx=x+w*i/N;if(!pip(poly,fx,y)||!pip(poly,fx,y+h))return false;}for(let i=1;i<N;i++){const fy=y+h*i/N;if(!pip(poly,x,fy)||!pip(poly,x+w,fy))return false;}return true;}
+
+function tischBreite(nMod,hs){return nMod*MOD_B+(nMod-1)*hs;}
+function maxModule(availW,hs){return Math.floor((availW+hs)/(MOD_B+hs));}
+
+function tryRow(inner,rowY,TIEFE,bbI,hs){
+  if(rowY+TIEFE>bbI.maxY)return null;
+  const top=hCuts(inner,rowY),bot=hCuts(inner,rowY+TIEFE);
+  if(top.length<2||bot.length<2)return null;
+  const xL=Math.max(top[0],bot[0]),xR=Math.min(top[top.length-1],bot[bot.length-1]);
+  if(xR<=xL)return null;
+  let nMod=maxModule(xR-xL,hs);
+  while(nMod>=MOD_MIN){const tb=tischBreite(nMod,hs),xs=xL+(xR-xL-tb)/2;if(rectIn(inner,xs,rowY,tb,TIEFE))return{xStart:xs,rowY,tischB:tb,nMod};nMod--;}
+  return null;
+}
+
+function findFirstRow(inner,bbI,TIEFE,hs){let y=bbI.minY;while(y+TIEFE<=bbI.maxY){const r=tryRow(inner,y,TIEFE,bbI,hs);if(r)return r;y+=0.5;}return null;}
+
+// Convert Leaflet latlngs to local meter coordinate system
+function latlngsToLocal(latlngs){
+  const R=6371000;
+  const lat0=latlngs[0].lat,lng0=latlngs[0].lng;
+  return latlngs.map(ll=>({
+    x:(ll.lng-lng0)*Math.PI/180*R*Math.cos(lat0*Math.PI/180),
+    y:-(ll.lat-lat0)*Math.PI/180*R // negiert weil Y nach Süden wächst
+  }));
+}
+function localToLatLng(local,origin,lat0){
+  const R=6371000;
+  const lat=origin.lat+(-local.y)/(Math.PI/180*R);
+  const lng=origin.lng+local.x/(Math.PI/180*R*Math.cos(lat0*Math.PI/180));
+  return[lat,lng];
+}
+
+function clearFieldLayers(){
+  fieldLayers.forEach(l=>map.removeLayer(l));
+  fieldLayers=[];fieldRows=[];
+}
+
+function belegen(){
+  if(!areaPolygon||areaPoints.length<3)return;
+  clearFieldLayers();
+  const uk=getUK();
+  const SEHNE=uk.n*MOD_H+(uk.n-1)*uk.vspalt;
+  const TIEFE=SEHNE*Math.cos(uk.winkel*Math.PI/180);
+  const origin=areaPoints[0];
+  const lat0=origin.lat;
+  const local=latlngsToLocal(areaPoints);
+  const bbAll={minX:Math.min(...local.map(p=>p.x)),maxX:Math.max(...local.map(p=>p.x)),minY:Math.min(...local.map(p=>p.y)),maxY:Math.max(...local.map(p=>p.y))};
+  const inner=insetPolygon(local,uk.rand);
+  const bbI={minX:Math.min(...inner.map(p=>p.x)),maxX:Math.max(...inner.map(p=>p.x)),minY:Math.min(...inner.map(p=>p.y)),maxY:Math.max(...inner.map(p=>p.y))};
+
+  // Innenlinie auf Karte
+  const innerLatLngs=inner.map(pt=>localToLatLng(pt,origin,lat0));
+  const innerLine=L.polygon(innerLatLngs,{color:'#ff4444',weight:1,fillOpacity:0,dashArray:'5 3',opacity:.7}).addTo(map);
+  fieldLayers.push(innerLine);
+
+  const rows=[];
+  const r1=findFirstRow(inner,bbI,TIEFE,uk.hspalt);
+  if(r1){
+    rows.push(r1);
+    let ls=r1.rowY+TIEFE;
+    while(true){
+      const ny=ls+uk.reihe;if(ny+TIEFE>bbI.maxY)break;
+      const row=tryRow(inner,ny,TIEFE,bbI,uk.hspalt);
+      if(row){rows.push(row);ls=row.rowY+TIEFE;}else ls=ny+TIEFE;
+      if(ls>bbI.maxY)break;
+    }
+  }
+
+  // Tische auf Karte zeichnen
+  rows.forEach(row=>{
+    const corners=[
+      {x:row.xStart,       y:row.rowY},
+      {x:row.xStart+row.tischB, y:row.rowY},
+      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
+      {x:row.xStart,       y:row.rowY+TIEFE},
+    ];
+    const llCorners=corners.map(c=>localToLatLng(c,origin,lat0));
+    const rect=L.polygon(llCorners,{color:'#4a9eff',weight:1.5,fillColor:'#4a9eff',fillOpacity:.12}).addTo(map);
+    fieldLayers.push(rect);
+  });
+
+  fieldRows=rows;
+  dirtyField=false;
+  document.getElementById('btn-update').disabled=true;
+  document.getElementById('btn-clear').disabled=false;
+
+  const totalMod=rows.reduce((s,r)=>s+r.nMod*uk.n,0);
+  document.getElementById('st-rows').textContent=`${rows.length}`;
+  document.getElementById('st-mods').textContent=`${totalMod} (${uk.n}-Landscape)`;
+  document.getElementById('field-stats').classList.add('show');
+}
+
+document.getElementById('btn-belegen').addEventListener('click',belegen);
+document.getElementById('btn-update').addEventListener('click',belegen);
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  clearFieldLayers();
+  document.getElementById('btn-clear').disabled=true;
+  document.getElementById('btn-update').disabled=true;
+  document.getElementById('st-rows').textContent='—';
+  document.getElementById('st-mods').textContent='—';
 });
 
-// Enter key to confirm
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && areaMode) confirmArea();
-});
+// ── INIT ──────────────────────────────────────────────────────────────────
+drawSchnitt();
 </script>
 </body>
 </html>
