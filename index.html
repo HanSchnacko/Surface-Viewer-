@@ -180,7 +180,9 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
         <button id="search-btn">→</button>
       </div>
       <div class="map-overlay" id="area-badge">⬡ <span id="area-m2">—</span></div>
+      <div class="map-overlay" id="measure-badge" style="display:none;top:60px;right:18px;padding:7px 14px;color:#ffdd44;border-color:rgba(255,221,68,.3);">📏 <span id="measure-val">—</span></div>
       <div id="map-btns">
+        <button class="map-btn" id="btn-measure">📏 Messen</button>
         <button class="map-btn" id="btn-reset">↺ Zurücksetzen</button>
         <button class="map-btn primary" id="btn-profile" disabled>Gelände ausgeben</button>
       </div>
@@ -431,6 +433,11 @@ function lerp(a,b,t){return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t}
 function fmtDist(m){return m>=1000?`${(m/1000).toFixed(2)} km`:`${Math.round(m)} m`;}
 
 map.on('click',e=>{
+  if(measureMode){
+    measurePoints.push(e.latlng);
+    updateMeasure();
+    return;
+  }
   if(areaMode){
     areaPoints.push(e.latlng);
     const m=L.circleMarker(e.latlng,{radius:4,color:'#ff4444',fillColor:'#ff4444',fillOpacity:1,weight:1}).addTo(map);
@@ -780,6 +787,91 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
   document.getElementById('btn-update').disabled=true;
   document.getElementById('st-rows').textContent='—';
   document.getElementById('st-mods').textContent='—';
+});
+
+// ── MEASURE TOOL ──────────────────────────────────────────────────────────
+let measureMode=false, measurePoints=[], measureLayers=[];
+
+function fmtMeasure(m){
+  if(m>=1000) return `${(m/1000).toFixed(3)} km`;
+  return `${Math.round(m)} m`;
+}
+
+function updateMeasure(){
+  // Remove old layers
+  measureLayers.forEach(l=>map.removeLayer(l));
+  measureLayers=[];
+
+  if(measurePoints.length===0) return;
+
+  // Draw markers
+  measurePoints.forEach((p,i)=>{
+    const m=L.circleMarker(p,{radius:5,color:'#ffdd44',fillColor:'#ffdd44',fillOpacity:1,weight:1}).addTo(map);
+    measureLayers.push(m);
+  });
+
+  // Draw line between points
+  if(measurePoints.length>=2){
+    const line=L.polyline(measurePoints,{color:'#ffdd44',weight:2,dashArray:'6 3',opacity:.9}).addTo(map);
+    measureLayers.push(line);
+
+    // Calculate total distance
+    let total=0;
+    for(let i=0;i<measurePoints.length-1;i++){
+      const segDist=map.distance(measurePoints[i],measurePoints[i+1]);
+      total+=segDist;
+
+      // Segment label
+      const mid=L.latLng(
+        (measurePoints[i].lat+measurePoints[i+1].lat)/2,
+        (measurePoints[i].lng+measurePoints[i+1].lng)/2
+      );
+      const segLabel=L.divIcon({
+        className:'',
+        html:`<div style="background:rgba(10,13,18,.85);border:1px solid rgba(255,221,68,.4);border-radius:3px;padding:2px 6px;font-family:DM Mono,monospace;font-size:10px;color:#ffdd44;white-space:nowrap;">${fmtMeasure(segDist)}</div>`,
+        iconAnchor:[30,10]
+      });
+      const segMarker=L.marker(mid,{icon:segLabel}).addTo(map);
+      measureLayers.push(segMarker);
+    }
+
+    // Total distance badge
+    const totalTxt = measurePoints.length>2
+      ? `Gesamt: ${fmtMeasure(total)}`
+      : fmtMeasure(total);
+    document.getElementById('measure-val').textContent=totalTxt;
+    document.getElementById('measure-badge').style.display='block';
+  }
+}
+
+document.getElementById('btn-measure').addEventListener('click',()=>{
+  if(measureMode){
+    // Stop measuring
+    measureMode=false;
+    measurePoints=[];
+    measureLayers.forEach(l=>map.removeLayer(l));
+    measureLayers=[];
+    document.getElementById('btn-measure').classList.remove('measure-active');
+    document.getElementById('btn-measure').textContent='📏 Messen';
+    document.getElementById('measure-badge').style.display='none';
+    document.getElementById('instruction').classList.add('hidden');
+  } else {
+    measureMode=true;
+    document.getElementById('btn-measure').classList.add('measure-active');
+    document.getElementById('btn-measure').textContent='✕ Messen beenden';
+    document.getElementById('instruction').textContent='Punkte klicken zum Messen · Doppelklick = beenden';
+    document.getElementById('instruction').classList.remove('hidden');
+  }
+});
+
+// Double click ends measurement
+map.on('dblclick',e=>{
+  if(!measureMode) return;
+  L.DomEvent.stop(e);
+  measureMode=false;
+  document.getElementById('btn-measure').classList.remove('measure-active');
+  document.getElementById('btn-measure').textContent='📏 Messen';
+  document.getElementById('instruction').classList.add('hidden');
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────
