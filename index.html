@@ -308,6 +308,132 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── UK MODAL ── */
+#uk-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(5,8,12,0.85);
+  backdrop-filter: blur(5px);
+  align-items: center;
+  justify-content: center;
+}
+#uk-overlay.open { display: flex; }
+
+#uk-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: min(94vw, 520px);
+  animation: modalIn 0.22s ease;
+  overflow: hidden;
+}
+
+#uk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 50px;
+  border-bottom: 1px solid var(--border);
+}
+
+#uk-header h2 {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+#uk-close {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-family: var(--font-mono);
+}
+#uk-close:hover { color: var(--text); border-color: var(--border); }
+
+#uk-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.uk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.uk-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.uk-select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 9px 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7a8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.uk-select:hover, .uk-select:focus { border-color: var(--accent2); }
+
+#uk-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+#uk-cancel {
+  padding: 8px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#uk-cancel:hover { color: var(--text); border-color: var(--muted); }
+
+#uk-apply {
+  padding: 8px 22px;
+  background: var(--accent2);
+  border: 1px solid var(--accent2);
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#uk-apply:hover { background: #3aabff; border-color: #3aabff; }
+
 /* Leaflet overrides */
 .leaflet-control-zoom { border: 1px solid var(--border) !important; margin-top: 58px !important; }
 .leaflet-control-zoom a { background: rgba(11,14,20,0.9) !important; color: var(--text) !important; border-color: var(--border) !important; }
@@ -362,6 +488,52 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
         <div class="modal-stat-label">Max. Höhe</div>
         <div class="modal-stat-val warn" id="modal-max">—</div>
       </div>
+      <div class="modal-stat" style="border-left:1px solid var(--border);">
+        <button id="btn-uk" class="flt-btn" style="padding:8px 20px;font-size:0.76rem;background:var(--accent2);color:#fff;border-color:var(--accent2);">⚡ UK belegen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UK CONFIG MODAL -->
+<div id="uk-overlay">
+  <div id="uk-modal">
+    <div id="uk-header">
+      <h2>UK-Randbedingungen</h2>
+      <button id="uk-close">✕</button>
+    </div>
+    <div id="uk-body">
+      <div class="uk-field">
+        <div class="uk-label">1 · Modul auswählen</div>
+        <select class="uk-select" id="uk-modul">
+          <option value="1134x2382">1134 mm × 2382 mm</option>
+        </select>
+      </div>
+      <div class="uk-field">
+        <div class="uk-label">2 · Anordnung</div>
+        <select class="uk-select" id="uk-anordnung">
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+      </div>
+      <div class="uk-field">
+        <div class="uk-label">3 · Anstellwinkel</div>
+        <select class="uk-select" id="uk-winkel">
+          <option value="18">18°</option>
+        </select>
+      </div>
+      <div class="uk-field">
+        <div class="uk-label">4 · Reihenabstand (Achsmaß)</div>
+        <select class="uk-select" id="uk-abstand">
+          <option value="2">2 m</option>
+          <option value="3">3 m</option>
+          <option value="4">4 m</option>
+        </select>
+      </div>
+    </div>
+    <div id="uk-footer">
+      <button id="uk-cancel">Abbrechen</button>
+      <button id="uk-apply">Übernehmen</button>
     </div>
   </div>
 </div>
@@ -632,6 +804,28 @@ document.getElementById('btn-search').addEventListener('click', () => {
 });
 document.getElementById('plz-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { const q = document.getElementById('plz-input').value.trim(); if (q) searchLocation(q); }
+});
+// ── UK MODAL ───────────────────────────────────────────────────────────────
+document.getElementById('btn-uk').addEventListener('click', () => {
+  document.getElementById('uk-overlay').classList.add('open');
+});
+
+function closeUK() { document.getElementById('uk-overlay').classList.remove('open'); }
+
+document.getElementById('uk-close').addEventListener('click', closeUK);
+document.getElementById('uk-cancel').addEventListener('click', closeUK);
+document.getElementById('uk-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('uk-overlay')) closeUK();
+});
+
+document.getElementById('uk-apply').addEventListener('click', () => {
+  const modul    = document.getElementById('uk-modul').value;
+  const anordnung = document.getElementById('uk-anordnung').value;
+  const winkel   = parseInt(document.getElementById('uk-winkel').value);
+  const abstand  = parseFloat(document.getElementById('uk-abstand').value);
+  console.log('UK-Konfiguration:', { modul, anordnung, winkel, abstand });
+  // → hier wird später die PV-Tisch-Zeichnung ausgelöst
+  closeUK();
 });
 </script>
 </body>
