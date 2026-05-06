@@ -4,523 +4,339 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Geländeschnitt</title>
-
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
-<!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
 
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #0b0e14;
-    --surface: #13181f;
-    --panel: #1a2130;
-    --border: #2a3545;
-    --accent: #00e5a0;
-    --accent2: #0090ff;
-    --warn: #ff6b35;
-    --text: #e8edf4;
-    --muted: #6b7a8d;
-    --font-display: 'Syne', sans-serif;
-    --font-mono: 'DM Mono', monospace;
-  }
+:root {
+  --bg: #0b0e14;
+  --surface: #13181f;
+  --panel: #1a2130;
+  --border: #2a3545;
+  --accent: #00e5a0;
+  --accent2: #0090ff;
+  --warn: #ff6b35;
+  --text: #e8edf4;
+  --muted: #6b7a8d;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
 
-  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font-mono); }
+html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
 
-  /* ── LAYOUT ── */
-  #app {
-    display: grid;
-    grid-template-rows: 52px 1fr;
-    grid-template-columns: 1fr;
-    height: 100vh;
-  }
+/* ── HEADER ── */
+#header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 600;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(11,14,20,0.88);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
 
-  /* ── HEADER ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    z-index: 1000;
-  }
+.logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.logo span { color: var(--text); }
 
-  .logo {
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-    color: var(--accent);
-  }
-  .logo span { color: var(--text); }
+#header-status {
+  display: flex;
+  gap: 16px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
 
-  .status-bar {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    font-size: 0.72rem;
-    color: var(--muted);
-  }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 5px; transition: background 0.3s; }
+.dot.active { background: var(--accent); box-shadow: 0 0 5px var(--accent); }
 
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+/* ── INSTRUCTION ── */
+#instruction {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(11,14,20,0.88);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 0.76rem;
+  color: var(--text);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+}
+#instruction.hidden { opacity: 0; }
 
-  .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: background 0.3s;
-  }
-  .dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+/* ── SEARCH BOX ── */
+#search-box {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  gap: 6px;
+  background: rgba(11,14,20,0.92);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  backdrop-filter: blur(8px);
+  width: 300px;
+}
 
-  /* ── MAIN CONTENT ── */
-  #main {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    grid-template-rows: 1fr;
-    overflow: hidden;
-  }
+#search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+}
+#search-box input::placeholder { color: var(--muted); }
 
-  /* ── MAP ── */
-  #map-wrap {
-    position: relative;
-    overflow: hidden;
-  }
+#btn-search {
+  flex: none;
+  padding: 4px 12px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#btn-search:hover { background: #00fdb5; }
 
-  #map { width: 100%; height: 100%; }
+/* ── FLOATING BUTTONS ── */
+#floating-btns {
+  position: absolute;
+  bottom: 32px;
+  right: 20px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  /* Instruction overlay */
-  #instruction {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 500;
-    background: rgba(11,14,20,0.88);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px 18px;
-    font-size: 0.78rem;
-    color: var(--text);
-    letter-spacing: 0.04em;
-    backdrop-filter: blur(6px);
-    text-align: center;
-    pointer-events: none;
-    transition: opacity 0.4s;
-  }
-  #instruction.hidden { opacity: 0; }
+.flt-btn {
+  padding: 10px 18px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+}
 
-  /* Map markers */
-  .marker-pin {
-    width: 22px; height: 22px;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    border: 2px solid rgba(255,255,255,0.15);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .marker-pin.a { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-  .marker-pin.b { background: var(--accent2); box-shadow: 0 0 12px var(--accent2); }
+#btn-reset {
+  background: rgba(11,14,20,0.88);
+  color: var(--muted);
+}
+#btn-reset:hover { color: var(--text); border-color: var(--muted); }
 
-  /* ── RIGHT PANEL ── */
-  #panel {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    overflow: hidden;
-  }
+#btn-profile {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+#btn-profile:hover { background: #00fdb5; border-color: #00fdb5; }
+#btn-profile:disabled { opacity: 0.35; cursor: not-allowed; background: var(--accent); }
 
-  #panel-header {
-    padding: 16px 20px 12px;
-    border-bottom: 1px solid var(--border);
-  }
+/* ── MARKERS ── */
+.marker-pin {
+  width: 20px; height: 20px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+.marker-pin.a { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.marker-pin.b { background: var(--accent2); box-shadow: 0 0 10px var(--accent2); }
 
-  #panel-header h2 {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 12px;
-  }
+/* ── MODAL ── */
+#modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(5,8,12,0.82);
+  backdrop-filter: blur(5px);
+  align-items: center;
+  justify-content: center;
+}
+#modal-overlay.open { display: flex; }
 
-  .coords-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
+#modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: min(94vw, 1100px);
+  height: min(88vh, 700px);
+  display: grid;
+  grid-template-rows: 52px 1fr 60px;
+  overflow: hidden;
+  animation: modalIn 0.22s ease;
+}
 
-  .coord-box {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 10px 12px;
-  }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
 
-  .coord-label {
-    font-size: 0.62rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
+#modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
 
-  .coord-label .clr {
-    width: 6px; height: 6px; border-radius: 50%;
-    display: inline-block;
-  }
-  .clr-a { background: var(--accent); }
-  .clr-b { background: var(--accent2); }
+#modal-header h2 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
 
-  .coord-val {
-    font-size: 0.78rem;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-  }
+#modal-close {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-family: var(--font-mono);
+}
+#modal-close:hover { color: var(--text); border-color: var(--border); }
 
-  /* Chart area */
-  #chart-wrap {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow: hidden;
-    position: relative;
-  }
+#modal-chart-wrap {
+  padding: 20px 28px 12px;
+  position: relative;
+  min-height: 0;
+}
 
-  #chart-wrap h3 {
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
+#modal-chart { width: 100% !important; height: 100% !important; }
 
-  #chart-container {
-    flex: 1;
-    position: relative;
-    min-height: 0;
-  }
+#modal-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
 
-  /* Empty / loading state */
-  #empty-state {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: var(--muted);
-    font-size: 0.75rem;
-    text-align: center;
-    letter-spacing: 0.04em;
-  }
+.modal-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-right: 1px solid var(--border);
+}
+.modal-stat:last-child { border-right: none; }
 
-  #empty-state svg { opacity: 0.3; }
+.modal-stat-label {
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  font-family: var(--font-mono);
+}
 
-  .spinner {
-    width: 28px; height: 28px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    display: none;
-  }
-  .spinner.active { display: block; }
+.modal-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.modal-stat-val.green { color: var(--accent); }
+.modal-stat-val.blue  { color: var(--accent2); }
+.modal-stat-val.warn  { color: var(--warn); }
 
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ── LOADING OVERLAY ── */
+#loading {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(5,8,12,0.7);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+#loading.active { display: flex; }
 
-  /* Stats row */
-  #stats {
-    padding: 12px 20px;
-    border-top: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .stat {
-    text-align: center;
-  }
-
-  .stat-label {
-    font-size: 0.62rem;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 3px;
-  }
-
-  .stat-val {
-    font-family: var(--font-display);
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  .stat-val.blue { color: var(--accent2); }
-  .stat-val.warn { color: var(--warn); }
-
-  /* Buttons */
-  #actions {
-    display: flex;
-    gap: 8px;
-    padding: 0 20px 14px;
-  }
-
-  button {
-    flex: 1;
-    padding: 9px 14px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--panel);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 0.74rem;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  button:hover { border-color: var(--accent); color: var(--accent); }
-  button.primary {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
-    font-weight: 500;
-  }
-  button.primary:hover { background: #00fdb5; border-color: #00fdb5; color: #000; }
-  button:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* Leaflet overrides */
-  .leaflet-control-zoom { border: 1px solid var(--border) !important; }
-  .leaflet-control-zoom a {
-    background: var(--surface) !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-  }
-  .leaflet-control-zoom a:hover { background: var(--panel) !important; color: var(--accent) !important; }
-  .leaflet-bar { box-shadow: none !important; }
-
-  /* ── MODAL ── */
-  #modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: rgba(5,8,12,0.85);
-    backdrop-filter: blur(4px);
-    align-items: center;
-    justify-content: center;
-  }
-  #modal-overlay.open { display: flex; }
-
-  #modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    width: min(92vw, 900px);
-    height: min(88vh, 680px);
-    display: grid;
-    grid-template-rows: 52px 1fr 56px;
-    overflow: hidden;
-    animation: modalIn 0.25s ease;
-  }
-
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.96) translateY(10px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  #modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #modal-header h2 {
-    font-family: var(--font-display);
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  #modal-close {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 1.4rem;
-    cursor: pointer;
-    line-height: 1;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: color 0.2s, background 0.2s;
-    flex: none;
-  }
-  #modal-close:hover { color: var(--text); background: var(--panel); }
-
-  #modal-chart-wrap {
-    position: relative;
-    padding: 20px 24px 8px;
-  }
-
-  #modal-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 10px 24px;
-    border-top: 1px solid var(--border);
-  }
-
-  /* ── SEARCH BOX ── */
-  #search-box {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 500;
-    display: flex;
-    gap: 6px;
-    background: rgba(11,14,20,0.92);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 10px;
-    backdrop-filter: blur(8px);
-    width: 280px;
-  }
-
-  #search-box input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.04em;
-  }
-
-  #search-box input::placeholder { color: var(--muted); }
-
-  #btn-search {
-    flex: none;
-    padding: 4px 12px;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    border-radius: 3px;
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  #btn-search:hover { background: #00fdb5; }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    #main { grid-template-columns: 1fr; grid-template-rows: 60vh 1fr; }
-    #panel { border-left: none; border-top: 1px solid var(--border); }
-    body { overflow: auto; }
-    html, body, #app { height: auto; }
-    #app { grid-template-rows: 52px auto; }
-    #main { height: auto; }
-    #map-wrap { height: 60vmin; min-height: 300px; }
-  }
+/* Leaflet overrides */
+.leaflet-control-zoom { border: 1px solid var(--border) !important; margin-top: 58px !important; }
+.leaflet-control-zoom a { background: rgba(11,14,20,0.9) !important; color: var(--text) !important; border-color: var(--border) !important; }
+.leaflet-control-zoom a:hover { color: var(--accent) !important; }
+.leaflet-bar { box-shadow: none !important; }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <div class="logo">GELÄNDE<span>SCHNITT</span></div>
-    <div class="status-bar">
-      <div class="status-item">
-        <div class="dot" id="dot-a"></div>
-        <span id="lbl-a">Punkt A: —</span>
-      </div>
-      <div class="status-item">
-        <div class="dot" id="dot-b"></div>
-        <span id="lbl-b">Punkt B: —</span>
-      </div>
-    </div>
-  </header>
 
-  <div id="main">
-    <div id="map-wrap">
-      <div id="map"></div>
-      <div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
-      <div id="search-box">
-        <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="10" />
-        <button id="btn-search">→</button>
-      </div>
-    </div>
+<div id="map"></div>
 
-    <div id="panel">
-      <div id="panel-header">
-        <h2>Koordinaten</h2>
-        <div class="coords-grid">
-          <div class="coord-box">
-            <div class="coord-label"><span class="clr clr-a"></span>Punkt A</div>
-            <div class="coord-val" id="coord-a">—</div>
-          </div>
-          <div class="coord-box">
-            <div class="coord-label"><span class="clr clr-b"></span>Punkt B</div>
-            <div class="coord-val" id="coord-b">—</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="chart-wrap">
-        <h3>Geländeprofil</h3>
-        <div id="chart-container">
-          <div id="empty-state">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 32L13 16l7 10 6-8 10 14H4z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
-            </svg>
-            <div class="spinner" id="spinner"></div>
-            <span id="empty-msg">Zwei Punkte auf der Karte setzen</span>
-          </div>
-          <canvas id="myChart" style="display:none;"></canvas>
-        </div>
-      </div>
-
-      <div id="stats">
-        <div class="stat">
-          <div class="stat-label">Distanz</div>
-          <div class="stat-val" id="stat-dist">—</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Δ Höhe</div>
-          <div class="stat-val blue" id="stat-delta">—</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Max. Höhe</div>
-          <div class="stat-val warn" id="stat-max">—</div>
-        </div>
-      </div>
-
-      <div id="actions">
-        <button id="btn-reset">↺ Zurücksetzen</button>
-        <button class="primary" id="btn-profile" disabled>Profil berechnen</button>
-      </div>
-    </div>
+<div id="header">
+  <div class="logo">GELÄNDE<span>SCHNITT</span></div>
+  <div id="header-status">
+    <span><span class="dot" id="dot-a"></span><span id="lbl-a">Punkt A: —</span></span>
+    <span><span class="dot" id="dot-b"></span><span id="lbl-b">Punkt B: —</span></span>
   </div>
+</div>
+
+<div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
+
+<div id="search-box">
+  <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="20"/>
+  <button id="btn-search">→</button>
+</div>
+
+<div id="floating-btns">
+  <button class="flt-btn" id="btn-reset">↺ Zurücksetzen</button>
+  <button class="flt-btn" id="btn-profile" disabled>Profil berechnen</button>
 </div>
 
 <!-- MODAL -->
@@ -528,64 +344,50 @@
   <div id="modal">
     <div id="modal-header">
       <h2 id="modal-title">Geländeprofil</h2>
-      <button id="modal-close">✕</button>
+      <button id="modal-close">✕ Schließen</button>
     </div>
     <div id="modal-chart-wrap">
       <canvas id="modal-chart"></canvas>
     </div>
-    <div id="modal-stats">
-      <div class="stat"><div class="stat-label">Distanz</div><div class="stat-val" id="modal-dist">—</div></div>
-      <div class="stat"><div class="stat-label">Δ Höhe</div><div class="stat-val blue" id="modal-delta">—</div></div>
-      <div class="stat"><div class="stat-label">Max. Höhe</div><div class="stat-val warn" id="modal-max">—</div></div>
+    <div id="modal-footer">
+      <div class="modal-stat">
+        <div class="modal-stat-label">Distanz</div>
+        <div class="modal-stat-val green" id="modal-dist">—</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-label">Δ Höhe</div>
+        <div class="modal-stat-val blue" id="modal-delta">—</div>
+      </div>
+      <div class="modal-stat">
+        <div class="modal-stat-label">Max. Höhe</div>
+        <div class="modal-stat-val warn" id="modal-max">—</div>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- LOADING -->
+<div id="loading">
+  <div class="spinner"></div>
+  <span>Höhendaten werden geladen…</span>
+</div>
+
 <script>
-// ── MAP SETUP ──────────────────────────────────────────────────────────────
+// ── MAP ────────────────────────────────────────────────────────────────────
 const map = L.map('map', { zoomControl: true }).setView([47.5, 10.5], 9);
-
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  attribution: 'Tiles © Esri',
-  maxZoom: 19
+  attribution: 'Tiles © Esri', maxZoom: 19
 }).addTo(map);
-
-// ── PLZ / LOCATION SEARCH ─────────────────────────────────────────────────
-async function searchLocation(query) {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=de,at,ch&limit=1&format=json`;
-  const res = await fetch(url, { headers: { 'Accept-Language': 'de' } });
-  const data = await res.json();
-  if (data.length === 0) {
-    alert('Ort nicht gefunden. Bitte PLZ oder Ortsname eingeben.');
-    return;
-  }
-  const { lat, lon, display_name } = data[0];
-  map.setView([parseFloat(lat), parseFloat(lon)], 13, { animate: true });
-}
-
-document.getElementById('btn-search').addEventListener('click', () => {
-  const q = document.getElementById('plz-input').value.trim();
-  if (q) searchLocation(q);
-});
-
-document.getElementById('plz-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const q = document.getElementById('plz-input').value.trim();
-    if (q) searchLocation(q);
-  }
-});
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let pointA = null, pointB = null;
 let markerA = null, markerB = null;
 let polyline = null;
 let chart = null;
-let phase = 'A'; // 'A' | 'B' | 'done'
+let phase = 'A';
 
-// ── HELPERS ───────────────────────────────────────────────────────────────
-function fmt(latlng) {
-  return `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
-}
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function fmt(ll) { return `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`; }
 
 function haversine(a, b) {
   const R = 6371000;
@@ -595,32 +397,21 @@ function haversine(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
 }
 
-function lerp(a, b, t) {
-  return { lat: a.lat + (b.lat - a.lat)*t, lng: a.lng + (b.lng - a.lng)*t };
-}
+function lerp(a, b, t) { return { lat: a.lat+(b.lat-a.lat)*t, lng: a.lng+(b.lng-a.lng)*t }; }
+
+function fmtDist(m) { return m >= 1000 ? `${(m/1000).toFixed(2)} km` : `${Math.round(m)} m`; }
 
 function makeIcon(cls) {
-  return L.divIcon({
-    className: '',
-    html: `<div class="marker-pin ${cls}"></div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 22]
-  });
-}
-
-function fmtDist(m) {
-  return m >= 1000 ? `${(m/1000).toFixed(2)} km` : `${Math.round(m)} m`;
+  return L.divIcon({ className:'', html:`<div class="marker-pin ${cls}"></div>`, iconSize:[20,20], iconAnchor:[10,20] });
 }
 
 // ── MAP CLICK ──────────────────────────────────────────────────────────────
 map.on('click', e => {
   if (phase === 'done') return;
-
   if (phase === 'A') {
     pointA = e.latlng;
     if (markerA) map.removeLayer(markerA);
     markerA = L.marker(pointA, { icon: makeIcon('a') }).addTo(map);
-    document.getElementById('coord-a').textContent = fmt(pointA);
     document.getElementById('dot-a').classList.add('active');
     document.getElementById('lbl-a').textContent = `A: ${fmt(pointA)}`;
     document.getElementById('instruction').textContent = 'Klick auf die Karte → Punkt B setzen';
@@ -629,51 +420,32 @@ map.on('click', e => {
     pointB = e.latlng;
     if (markerB) map.removeLayer(markerB);
     markerB = L.marker(pointB, { icon: makeIcon('b') }).addTo(map);
-    document.getElementById('coord-b').textContent = fmt(pointB);
     document.getElementById('dot-b').classList.add('active');
     document.getElementById('lbl-b').textContent = `B: ${fmt(pointB)}`;
-
-    // Draw line
     if (polyline) map.removeLayer(polyline);
-    polyline = L.polyline([pointA, pointB], {
-      color: '#00e5a0',
-      weight: 2,
-      dashArray: '6 4',
-      opacity: 0.85
-    }).addTo(map);
-
-    // Fit bounds with padding
-    map.fitBounds(L.latLngBounds([pointA, pointB]), { padding: [60, 60] });
-
+    polyline = L.polyline([pointA, pointB], { color:'#00e5a0', weight:2, dashArray:'6 4', opacity:0.9 }).addTo(map);
+    map.fitBounds(L.latLngBounds([pointA, pointB]), { padding:[80,80] });
     document.getElementById('instruction').classList.add('hidden');
     document.getElementById('btn-profile').disabled = false;
-
-    const dist = haversine(pointA, pointB);
-    document.getElementById('stat-dist').textContent = fmtDist(dist);
     phase = 'done';
   }
 });
 
-// ── FETCH ELEVATION ────────────────────────────────────────────────────────
-
-// 1) Open-Meteo Elevation API — explizit CORS-freundlich, kein API-Key, 90m SRTM
+// ── ELEVATION APIs ─────────────────────────────────────────────────────────
 async function fetchOpenMeteo(points) {
   const lats = points.map(p => p.lat.toFixed(6)).join(',');
   const lngs = points.map(p => p.lng.toFixed(6)).join(',');
-  const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+  const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
+  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
   const data = await res.json();
   if (!data.elevation) throw new Error('Kein elevation-Feld');
   return data.elevation;
 }
 
-// 2) OpenTopoData fallback
 async function fetchOpenTopoChunk(points) {
   const loc = points.map(p => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`).join('|');
-  const url = `https://api.opentopodata.org/v1/srtm90m?locations=${encodeURIComponent(loc)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`OpenTopoData HTTP ${res.status}`);
+  const res = await fetch(`https://api.opentopodata.org/v1/srtm90m?locations=${encodeURIComponent(loc)}`);
+  if (!res.ok) throw new Error(`OpenTopoData ${res.status}`);
   const data = await res.json();
   if (data.status !== 'OK') throw new Error('OpenTopoData: ' + data.status);
   return data.results.map(r => r.elevation ?? 0);
@@ -681,103 +453,82 @@ async function fetchOpenTopoChunk(points) {
 
 function chunkArr(arr, n) {
   const out = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i+n));
   return out;
 }
 
 async function fetchElevation(points) {
   const chunks = chunkArr(points, 100);
   try {
-    const results = await Promise.all(chunks.map(fetchOpenMeteo));
-    return results.flat();
-  } catch (e1) {
-    console.warn('Open-Meteo fehlgeschlagen, versuche OpenTopoData…', e1);
+    const r = await Promise.all(chunks.map(fetchOpenMeteo));
+    return r.flat();
+  } catch(e1) {
     try {
-      const results = await Promise.all(chunks.map(fetchOpenTopoChunk));
-      return results.flat();
-    } catch (e2) {
-      console.error('Alle APIs fehlgeschlagen:', e1, e2);
-      throw new Error('Höhendaten konnten nicht geladen werden.');
+      const r = await Promise.all(chunks.map(fetchOpenTopoChunk));
+      return r.flat();
+    } catch(e2) {
+      throw new Error('Höhendaten nicht verfügbar.');
     }
   }
 }
 
-// ── PROFILE CALCULATION ────────────────────────────────────────────────────
+function gaussSmooth(data, radius) {
+  return data.map((_, i) => {
+    let sum = 0, weight = 0;
+    for (let j = -radius; j <= radius; j++) {
+      const idx = Math.min(Math.max(i+j, 0), data.length-1);
+      const w = Math.exp(-(j*j) / (2*radius*radius/4));
+      sum += data[idx] * w; weight += w;
+    }
+    return sum / weight;
+  });
+}
+
+// ── PROFILE ────────────────────────────────────────────────────────────────
 document.getElementById('btn-profile').addEventListener('click', async () => {
   const btn = document.getElementById('btn-profile');
   btn.disabled = true;
-  btn.textContent = '…';
+  document.getElementById('loading').classList.add('active');
 
-  const spinner = document.getElementById('spinner');
-  const emptyMsg = document.getElementById('empty-msg');
-  const emptyState = document.getElementById('empty-state');
-  const canvas = document.getElementById('myChart');
-
-  spinner.classList.add('active');
-  emptyState.style.display = 'flex';
-  canvas.style.display = 'none';
-  emptyMsg.textContent = 'Höhendaten werden geladen…';
-
+  const SAMPLES = 99;
   const dist = haversine(pointA, pointB);
-  // More samples for short distances → smoother profile
-  const SAMPLES = dist < 500 ? 99 : dist < 2000 ? 99 : 99;
-  const samplePoints = [];
-  for (let i = 0; i <= SAMPLES; i++) {
-    samplePoints.push(lerp(pointA, pointB, i / SAMPLES));
-  }
-
-  const distances = samplePoints.map((_, i) => ((i / SAMPLES) * dist / 1000).toFixed(4));
+  const pts = Array.from({length: SAMPLES+1}, (_, i) => lerp(pointA, pointB, i/SAMPLES));
+  const distances = pts.map((_, i) => ((i/SAMPLES)*dist/1000).toFixed(4));
 
   try {
-    const rawElevations = await fetchElevation(samplePoints);
+    const raw = await fetchElevation(pts);
+    const elevations = gaussSmooth(raw, 8);
 
-    // Gaussian smoothing to remove raster stepping artefacts
-    function gaussSmooth(data, radius) {
-      const out = [];
-      for (let i = 0; i < data.length; i++) {
-        let sum = 0, weight = 0;
-        for (let j = -radius; j <= radius; j++) {
-          const idx = Math.min(Math.max(i + j, 0), data.length - 1);
-          const w = Math.exp(-(j * j) / (2 * radius * radius / 4));
-          sum += data[idx] * w;
-          weight += w;
-        }
-        out.push(sum / weight);
-      }
-      return out;
-    }
-    const elevations = gaussSmooth(rawElevations, 8);
-
-    // Stats
     const maxEl = Math.max(...elevations);
     const minEl = Math.min(...elevations);
     const elA = elevations[0];
-    const elB = elevations[elevations.length - 1];
+    const elB = elevations[elevations.length-1];
+    const range = Math.max(maxEl - minEl, 10);
+    const pad = Math.max(2, range * 0.25);
 
-    document.getElementById('stat-delta').textContent = `${(elB - elA >= 0 ? '+' : '')}${Math.round(elB - elA)} m`;
-    document.getElementById('stat-max').textContent = `${Math.round(maxEl)} m`;
+    document.getElementById('modal-dist').textContent = fmtDist(dist);
+    document.getElementById('modal-delta').textContent = `${elB-elA >= 0 ? '+' : ''}${Math.round(elB-elA)} m`;
+    document.getElementById('modal-max').textContent = `${Math.round(maxEl)} m`;
+    document.getElementById('modal-title').textContent = `Geländeprofil · ${fmtDist(dist)}`;
 
-    // Draw chart
-    emptyState.style.display = 'none';
-    canvas.style.display = 'block';
+    document.getElementById('loading').classList.remove('active');
+    document.getElementById('modal-overlay').classList.add('open');
 
     if (chart) chart.destroy();
-
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
-    gradient.addColorStop(0, 'rgba(0, 229, 160, 0.35)');
-    gradient.addColorStop(1, 'rgba(0, 229, 160, 0.01)');
+    const ctx = document.getElementById('modal-chart').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 480);
+    grad.addColorStop(0, 'rgba(0,229,160,0.28)');
+    grad.addColorStop(1, 'rgba(0,229,160,0.01)');
 
     chart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: distances,
         datasets: [{
-          label: 'Höhe (m)',
           data: elevations,
           borderColor: '#00e5a0',
-          borderWidth: 1.8,
-          backgroundColor: gradient,
+          borderWidth: 2,
+          backgroundColor: grad,
           fill: true,
           pointRadius: 0,
           tension: 0.5,
@@ -787,7 +538,7 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: { duration: 800 },
+        animation: { duration: 700 },
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { display: false },
@@ -798,57 +549,44 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
             titleColor: '#6b7a8d',
             bodyColor: '#e8edf4',
             titleFont: { family: 'DM Mono', size: 11 },
-            bodyFont: { family: 'DM Mono', size: 12 },
+            bodyFont: { family: 'DM Mono', size: 13 },
             callbacks: {
-              title: items => `${items[0].label} km`,
+              title: items => `${parseFloat(items[0].label).toFixed(3)} km`,
               label: item => `  ${Math.round(item.raw)} m ü. NN`
             }
           }
         },
         scales: {
           x: {
-            ticks: {
-              color: '#6b7a8d',
-              font: { family: 'DM Mono', size: 10 },
-              maxTicksLimit: 6,
-              callback: (_, i) => distances[i] ? `${distances[i]}km` : ''
-            },
-            grid: { color: '#1a2130' },
-            border: { color: '#2a3545' }
+            ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, maxTicksLimit:10,
+              callback: (_, i) => distances[i] ? `${parseFloat(distances[i]).toFixed(2)}km` : '' },
+            grid: { color:'#1a2130' }, border: { color:'#2a3545' }
           },
           y: {
-            ticks: {
-              color: '#6b7a8d',
-              font: { family: 'DM Mono', size: 10 },
-              callback: v => `${v}m`
-            },
-            grid: { color: '#1a2130' },
-            border: { color: '#2a3545' },
-            min: Math.max(0, minEl - Math.max(5, (maxEl - minEl) * 0.15)),
-            max: maxEl + Math.max(5, (maxEl - minEl) * 0.15),
+            ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, callback: v => `${Math.round(v)}m` },
+            grid: { color:'#1a2130' }, border: { color:'#2a3545' },
+            min: Math.max(0, minEl - pad),
+            max: maxEl + pad
           }
         }
       }
     });
-
-  } catch (err) {
-    emptyMsg.textContent = 'Fehler beim Laden der Höhendaten. Bitte erneut versuchen.';
+  } catch(err) {
+    document.getElementById('loading').classList.remove('active');
+    alert('Fehler beim Laden der Höhendaten. Bitte erneut versuchen.');
     console.error(err);
   } finally {
-    spinner.classList.remove('active');
     btn.disabled = false;
-    btn.textContent = 'Profil berechnen';
   }
 });
 
-// ── MODAL CLOSE ───────────────────────────────────────────────────────────
+// ── MODAL CLOSE ────────────────────────────────────────────────────────────
 document.getElementById('modal-close').addEventListener('click', () => {
   document.getElementById('modal-overlay').classList.remove('open');
 });
 document.getElementById('modal-overlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal-overlay')) {
+  if (e.target === document.getElementById('modal-overlay'))
     document.getElementById('modal-overlay').classList.remove('open');
-  }
 });
 
 // ── RESET ──────────────────────────────────────────────────────────────────
@@ -857,30 +595,34 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   if (markerB) { map.removeLayer(markerB); markerB = null; }
   if (polyline) { map.removeLayer(polyline); polyline = null; }
   if (chart) { chart.destroy(); chart = null; }
-
   pointA = pointB = null;
   phase = 'A';
-
-  document.getElementById('coord-a').textContent = '—';
-  document.getElementById('coord-b').textContent = '—';
   document.getElementById('dot-a').classList.remove('active');
   document.getElementById('dot-b').classList.remove('active');
   document.getElementById('lbl-a').textContent = 'Punkt A: —';
   document.getElementById('lbl-b').textContent = 'Punkt B: —';
-  document.getElementById('stat-dist').textContent = '—';
-  document.getElementById('stat-delta').textContent = '—';
-  document.getElementById('stat-max').textContent = '—';
   document.getElementById('btn-profile').disabled = true;
+  const instr = document.getElementById('instruction');
+  instr.textContent = 'Klick auf die Karte → Punkt A setzen';
+  instr.classList.remove('hidden');
+  document.getElementById('modal-overlay').classList.remove('open');
+});
 
-  const instruction = document.getElementById('instruction');
-  instruction.textContent = 'Klick auf die Karte → Punkt A setzen';
-  instruction.classList.remove('hidden');
+// ── SEARCH ─────────────────────────────────────────────────────────────────
+async function searchLocation(q) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&limit=1&format=json`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+  const data = await res.json();
+  if (!data.length) { alert('Ort nicht gefunden.'); return; }
+  map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 14, { animate: true });
+}
 
-  const emptyState = document.getElementById('empty-state');
-  emptyState.style.display = 'flex';
-  document.getElementById('empty-msg').textContent = 'Zwei Punkte auf der Karte setzen';
-  document.getElementById('myChart').style.display = 'none';
-  document.getElementById('spinner').classList.remove('active');
+document.getElementById('btn-search').addEventListener('click', () => {
+  const q = document.getElementById('plz-input').value.trim();
+  if (q) searchLocation(q);
+});
+document.getElementById('plz-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { const q = document.getElementById('plz-input').value.trim(); if (q) searchLocation(q); }
 });
 </script>
 </body>
