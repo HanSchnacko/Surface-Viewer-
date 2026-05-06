@@ -503,13 +503,16 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
     const minEl = Math.min(...elevations);
     const elA = elevations[0];
     const elB = elevations[elevations.length-1];
-    // Y-axis: scale relative to distance so gentle slopes look gentle
-    // minSpan ensures the vertical range is never less than dist/50
-    // (e.g. 180m distance → min 3.6m span shown; 1km → min 20m span)
+    // True-scale Y-axis: the chart is ~560px tall, dist maps to full width (~1000px)
+    // So pixel-per-meter vertical = pixel-per-meter horizontal * (chartH/chartW)
+    // We compute what vertical span corresponds to the horizontal distance at true scale,
+    // then use whichever is larger: actual range or true-scale span.
     const actualRange = maxEl - minEl;
-    const minSpan = Math.max(10, dist / 50);
-    const displayRange = Math.max(actualRange, minSpan);
-    const pad = displayRange * 0.15;
+    const chartW = document.getElementById('modal-chart').offsetWidth || 1000;
+    const chartH = document.getElementById('modal-chart').offsetHeight || 480;
+    const trueSpan = dist * (chartH / chartW);  // meters of height = meters of dist * aspect
+    const displayRange = Math.max(actualRange, trueSpan);
+    const pad = displayRange * 0.08;
     const midEl = (maxEl + minEl) / 2;
 
     document.getElementById('modal-dist').textContent = fmtDist(dist);
