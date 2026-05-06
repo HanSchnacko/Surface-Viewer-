@@ -653,31 +653,65 @@ function tischBreite(nMod,hs){return nMod*MOD_B+(nMod-1)*hs;}
 function maxModule(availW,hs){return Math.floor((availW+hs)/(MOD_B+hs));}
 
 // Gibt alle Segmente einer Reihe zurück (unterstützt konkave Polygone)
+// Scannt die Reihe in kleinen Schritten und findet alle freien X-Bereiche
 function tryRowSegments(inner,rowY,TIEFE,bbI,hs){
   if(rowY+TIEFE>bbI.maxY)return [];
-  const top=hCuts(inner,rowY),bot=hCuts(inner,rowY+TIEFE);
-  if(top.length<2||bot.length<2)return [];
 
-  // Baue Segmente aus Schnittpunkt-Paaren (links→rechts)
-  // top und bot können mehrere Paare haben bei konkaven Polygonen
-  const nPairs=Math.min(Math.floor(top.length/2),Math.floor(bot.length/2));
+  // Sammle alle Schnittpunkte an Nord- UND Südkante
+  // Dann bilde den Schnitt: nur Bereiche die an BEIDEN Kanten offen sind
+  const top=hCuts(inner,rowY);
+  const bot=hCuts(inner,rowY+TIEFE);
+
+  // Zusätzlich: scanne mehrere Zwischenhöhen für robustere Erkennung
+  const allCuts=[];
+  const steps=8;
+  for(let s=0;s<=steps;s++){
+    const y=rowY+(TIEFE/steps)*s;
+    const cuts=hCuts(inner,y);
+    allCuts.push(cuts);
+  }
+
+  // Finde alle X-Positionen die an ALLEN Schnitten innerhalb liegen
+  // Rastere X-Achse in 1m Schritten und prüfe ob jeder Punkt drin liegt
   const segments=[];
+  let segStart=null;
 
-  for(let p=0;p<nPairs;p++){
-    const xL=Math.max(top[p*2],bot[p*2]);
-    const xR=Math.min(top[p*2+1],bot[p*2+1]);
-    if(xR<=xL)continue;
-    let nMod=maxModule(xR-xL,hs);
-    while(nMod>=MOD_MIN){
-      const tb=tischBreite(nMod,hs),xs=xL+(xR-xL-tb)/2;
-      if(rectIn(inner,xs,rowY,tb,TIEFE)){
-        segments.push({xStart:xs,rowY,tischB:tb,nMod});
-        break;
+  const STEP=1.0; // 1m Raster
+  for(let x=bbI.minX;x<=bbI.maxX+STEP;x+=STEP){
+    const xMid=x+STEP/2;
+    // Prüfe ob dieser X-Streifen vollständig in der Reihe liegt
+    const inTop=isXBetweenCuts(top,x) && isXBetweenCuts(top,xMid) && isXBetweenCuts(top,x+STEP);
+    const inBot=isXBetweenCuts(bot,x) && isXBetweenCuts(bot,xMid) && isXBetweenCuts(bot,x+STEP);
+    const inside=inTop && inBot;
+
+    if(inside && segStart===null){
+      segStart=x;
+    } else if(!inside && segStart!==null){
+      // Segment gefunden: segStart → x
+      const availW=x-segStart;
+      let nMod=maxModule(availW,hs);
+      while(nMod>=MOD_MIN){
+        const tb=tischBreite(nMod,hs);
+        const xs=segStart+(availW-tb)/2;
+        if(rectIn(inner,xs,rowY,tb,TIEFE)){
+          segments.push({xStart:xs,rowY,tischB:tb,nMod});
+          break;
+        }
+        nMod--;
       }
-      nMod--;
+      segStart=null;
     }
   }
   return segments;
+}
+
+// Hilfsfunktion: liegt x zwischen einem Schnittpaar?
+function isXBetweenCuts(cuts,x){
+  if(cuts.length<2)return false;
+  for(let i=0;i<cuts.length-1;i+=2){
+    if(x>=cuts[i] && x<=cuts[i+1])return true;
+  }
+  return false;
 }
 
 function tryRow(inner,rowY,TIEFE,bbI,hs){
