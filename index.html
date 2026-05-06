@@ -291,6 +291,9 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
   </div>
 </div>
 
+<!-- DEBUG BOX -->
+<div id="debug-box" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:3000;background:rgba(10,13,18,.95);border:1px solid #ff9900;border-radius:6px;padding:10px 16px;font-family:DM Mono,monospace;font-size:11px;color:#ff9900;line-height:1.8;pointer-events:none;"></div>
+
 <!-- MODALS -->
 <!-- Terrain modal -->
 <div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(5,8,12,.82);backdrop-filter:blur(5px);align-items:center;justify-content:center;">
@@ -656,19 +659,39 @@ function tryRow(inner,rowY,TIEFE,bbI,hs){
 function findFirstRow(inner,bbI,TIEFE,hs){let y=bbI.minY;while(y+TIEFE<=bbI.maxY){const r=tryRow(inner,y,TIEFE,bbI,hs);if(r)return r;y+=0.5;}return null;}
 
 // Convert Leaflet latlngs to local meter coordinate system
-function latlngsToLocal(latlngs){
+// Koordinatenumrechnung über Leaflet EPSG3857 (Web Mercator)
+// Nutzt map.latLngToLayerPoint für pixelgenaue Umrechnung,
+// dann Meter-Skalierung über tatsächliche Erdkrümmung
+function getScale(lat){
+  // Meter pro Grad am gegebenen Breitengrad
   const R=6371000;
-  const lat0=latlngs[0].lat,lng0=latlngs[0].lng;
+  return{
+    mPerDegLat: Math.PI/180*R,                        // ~111319 m/°
+    mPerDegLng: Math.PI/180*R*Math.cos(lat*Math.PI/180) // variiert
+  };
+}
+
+function latlngsToLocal(latlngs){
+  const origin=latlngs[0];
+  const sc=getScale(origin.lat);
   return latlngs.map(ll=>({
-    x:(ll.lng-lng0)*Math.PI/180*R*Math.cos(lat0*Math.PI/180),
-    y:-(ll.lat-lat0)*Math.PI/180*R // negiert weil Y nach Süden wächst
+    x:(ll.lng-origin.lng)*sc.mPerDegLng,  // Osten = positiv
+    y:-(ll.lat-origin.lat)*sc.mPerDegLat  // Süden = positiv (Y nach unten)
   }));
 }
-function localToLatLng(local,origin,lat0){
-  const R=6371000;
-  const lat=origin.lat+(-local.y)/(Math.PI/180*R);
-  const lng=origin.lng+local.x/(Math.PI/180*R*Math.cos(lat0*Math.PI/180));
-  return[lat,lng];
+
+function localToLatLng(local,origin){
+  const sc=getScale(origin.lat);
+  return[
+    origin.lat + (-local.y)/sc.mPerDegLat,
+    origin.lng + local.x/sc.mPerDegLng
+  ];
+}
+
+function debugArea(local){
+  let a=0;
+  for(let i=0;i<local.length;i++){const j=(i+1)%local.length;a+=local[i].x*local[j].y-local[j].x*local[i].y;}
+  return Math.abs(a/2);
 }
 
 function clearFieldLayers(){
@@ -683,16 +706,27 @@ function belegen(){
   const SEHNE=uk.n*MOD_H+(uk.n-1)*uk.vspalt;
   const TIEFE=SEHNE*Math.cos(uk.winkel*Math.PI/180);
   const origin=areaPoints[0];
-  const lat0=origin.lat;
   const local=latlngsToLocal(areaPoints);
   const bbAll={minX:Math.min(...local.map(p=>p.x)),maxX:Math.max(...local.map(p=>p.x)),minY:Math.min(...local.map(p=>p.y)),maxY:Math.max(...local.map(p=>p.y))};
   const inner=insetPolygon(local,uk.rand);
   const bbI={minX:Math.min(...inner.map(p=>p.x)),maxX:Math.max(...inner.map(p=>p.x)),minY:Math.min(...inner.map(p=>p.y)),maxY:Math.max(...inner.map(p=>p.y))};
 
   // Innenlinie auf Karte
-  const innerLatLngs=inner.map(pt=>localToLatLng(pt,origin,lat0));
+  const innerLatLngs=inner.map(pt=>localToLatLng(pt,origin));
   const innerLine=L.polygon(innerLatLngs,{color:'#ff4444',weight:1,fillOpacity:0,dashArray:'5 3',opacity:.7}).addTo(map);
   fieldLayers.push(innerLine);
+
+  // Debug sichtbar in der App anzeigen
+  const localArea=debugArea(local);
+  const W=bbI.maxX-bbI.minX, H=bbI.maxY-bbI.minY;
+  const expectedRows=Math.floor(H/(TIEFE+uk.reihe));
+  document.getElementById('debug-box').style.display='block';
+  document.getElementById('debug-box').innerHTML=
+    `<b>DEBUG</b><br>`+
+    `Fläche lokal: ${Math.round(localArea).toLocaleString('de')} m² (${(localArea/10000).toFixed(2)} ha)<br>`+
+    `Innen B×H: ${W.toFixed(1)} m × ${H.toFixed(1)} m<br>`+
+    `Tischtiefe: ${TIEFE.toFixed(3)} m · Reihe: ${uk.reihe} m<br>`+
+    `Erwartete Reihen: ~${expectedRows}`;
 
   const rows=[];
   const r1=findFirstRow(inner,bbI,TIEFE,uk.hspalt);
@@ -707,6 +741,9 @@ function belegen(){
     }
   }
 
+  document.getElementById('debug-box').innerHTML+=
+    `<br>Tatsächliche Reihen: ${rows.length} · Module: ${rows.reduce((s,r)=>s+r.nMod*uk.n,0).toLocaleString('de')}`;
+
   // Tische auf Karte zeichnen
   rows.forEach(row=>{
     const corners=[
@@ -715,7 +752,7 @@ function belegen(){
       {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
       {x:row.xStart,       y:row.rowY+TIEFE},
     ];
-    const llCorners=corners.map(c=>localToLatLng(c,origin,lat0));
+    const llCorners=corners.map(c=>localToLatLng(c,origin));
     const rect=L.polygon(llCorners,{color:'#4a9eff',weight:1.5,fillColor:'#4a9eff',fillOpacity:.12}).addTo(map);
     fieldLayers.push(rect);
   });
