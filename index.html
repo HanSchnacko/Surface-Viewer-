@@ -246,7 +246,7 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 
 #modal-footer {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr) auto;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -680,13 +680,10 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
     // We compute what vertical span corresponds to the horizontal distance at true scale,
     // then use whichever is larger: actual range or true-scale span.
     const actualRange = maxEl - minEl;
-    const chartW = document.getElementById('modal-chart').offsetWidth || 1000;
-    const chartH = document.getElementById('modal-chart').offsetHeight || 480;
-    const trueSpan = dist * (chartH / chartW);
-    const displayRange = Math.max(actualRange, trueSpan);
-    const pad = displayRange * 0.08;
+    // Pad = 40% of range, minimum 5m — keeps curve well within chart without wasted space
+    const pad = Math.max(5, actualRange * 0.4);
     const midEl = (maxEl + minEl) / 2;
-    // Never start Y axis at 0 unless terrain is actually near 0
+    const displayRange = actualRange + pad * 2;
 
     document.getElementById('modal-dist').textContent = fmtDist(dist);
     document.getElementById('modal-delta').textContent = `${elB-elA >= 0 ? '+' : ''}${Math.round(elB-elA)} m`;
@@ -747,8 +744,8 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
           y: {
             ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, callback: v => `${Math.round(v)}m` },
             grid: { color:'#1a2130' }, border: { color:'#2a3545' },
-            min: Math.max(0, midEl - displayRange / 2 - pad),
-            max: midEl + displayRange / 2 + pad
+            min: Math.max(0, midEl - displayRange / 2),
+            max: midEl + displayRange / 2
           }
         }
       }
