@@ -468,6 +468,38 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 }
 #uk-apply:hover { background: #3aabff; border-color: #3aabff; }
 
+/* ── FLÄCHE ── */
+#btn-flaeche {
+  background: rgba(11,14,20,0.88);
+  color: var(--muted);
+}
+#btn-flaeche:hover { color: var(--text); border-color: var(--muted); }
+#btn-flaeche.active {
+  background: rgba(255,60,60,0.15);
+  color: #ff6060;
+  border-color: #ff6060;
+}
+
+#area-info {
+  display: none;
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(11,14,20,0.92);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+#area-info.visible { display: block; }
+
 /* Leaflet overrides */
 .leaflet-control-zoom { border: 1px solid var(--border) !important; margin-top: 58px !important; }
 .leaflet-control-zoom a { background: rgba(11,14,20,0.9) !important; color: var(--text) !important; border-color: var(--border) !important; }
@@ -489,6 +521,7 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 
 <div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
 
+<div id="area-info">Fläche: — m²</div>
 <div id="search-box">
   <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="20"/>
   <button id="btn-search">→</button>
@@ -496,7 +529,8 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 
 <div id="floating-btns">
   <button class="flt-btn" id="btn-reset">↺ Zurücksetzen</button>
-  <button class="flt-btn" id="btn-profile" disabled>Profil berechnen</button>
+  <button class="flt-btn" id="btn-profile" disabled>Gelände ausgeben</button>
+  <button class="flt-btn" id="btn-flaeche">⬡ Fläche definieren</button>
 </div>
 
 <!-- MODAL -->
@@ -959,6 +993,110 @@ document.getElementById('uk-overlay').addEventListener('click', e => {
 
 document.getElementById('uk-apply').addEventListener('click', () => {
   closeUK();
+});
+// ── FLÄCHE DEFINIEREN ─────────────────────────────────────────────────────
+let areaMode    = false;
+let areaPoints  = [];
+let areaTempMarkers = [];
+let areaPolyline = null;
+let areaPolygon  = null;
+
+function areaM2(pts) {
+  // Shoelace in Metern (approx. mit lat/lng → m Umrechnung)
+  let area = 0;
+  const n = pts.length;
+  const R = 6371000;
+  const latM = Math.PI / 180 * R;
+  for (let i = 0; i < n; i++) {
+    const j = (i+1) % n;
+    const xi = pts[i].lng * Math.PI/180 * R * Math.cos(pts[i].lat * Math.PI/180);
+    const yi = pts[i].lat * latM;
+    const xj = pts[j].lng * Math.PI/180 * R * Math.cos(pts[j].lat * Math.PI/180);
+    const yj = pts[j].lat * latM;
+    area += xi * yj - xj * yi;
+  }
+  return Math.abs(area / 2);
+}
+
+function updateAreaPreview() {
+  if (areaPolyline) map.removeLayer(areaPolyline);
+  if (areaPoints.length > 1) {
+    const pts = [...areaPoints, areaPoints[0]];
+    areaPolyline = L.polyline(pts, { color:'#ff4444', weight:2, dashArray:'5 4', opacity:0.9 }).addTo(map);
+  }
+  if (areaPoints.length >= 3) {
+    const m2 = areaM2(areaPoints);
+    const txt = m2 >= 10000
+      ? `Fläche: ${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`
+      : `Fläche: ${Math.round(m2).toLocaleString('de')} m²`;
+    document.getElementById('area-info').textContent = txt;
+    document.getElementById('area-info').classList.add('visible');
+  } else {
+    document.getElementById('area-info').textContent = 'Fläche: — m²';
+  }
+}
+
+function confirmArea() {
+  if (areaPoints.length < 3) return;
+  // Remove preview line
+  if (areaPolyline) { map.removeLayer(areaPolyline); areaPolyline = null; }
+  // Draw filled polygon
+  if (areaPolygon) map.removeLayer(areaPolygon);
+  areaPolygon = L.polygon(areaPoints, {
+    color: '#ff4444',
+    weight: 2,
+    fillColor: '#ff2222',
+    fillOpacity: 0.18,
+    opacity: 0.8
+  }).addTo(map);
+  // Clean up temp markers
+  areaTempMarkers.forEach(m => map.removeLayer(m));
+  areaTempMarkers = [];
+  // Exit area mode
+  areaMode = false;
+  areaPoints = [];
+  document.getElementById('btn-flaeche').classList.remove('active');
+  document.getElementById('btn-flaeche').textContent = '⬡ Fläche definieren';
+  document.getElementById('instruction').classList.add('hidden');
+  document.getElementById('area-info').classList.remove('visible');
+}
+
+document.getElementById('btn-flaeche').addEventListener('click', () => {
+  if (areaMode) {
+    // Cancel
+    areaMode = false;
+    areaPoints = [];
+    areaTempMarkers.forEach(m => map.removeLayer(m));
+    areaTempMarkers = [];
+    if (areaPolyline) { map.removeLayer(areaPolyline); areaPolyline = null; }
+    document.getElementById('btn-flaeche').classList.remove('active');
+    document.getElementById('btn-flaeche').textContent = '⬡ Fläche definieren';
+    document.getElementById('instruction').classList.add('hidden');
+    document.getElementById('area-info').classList.remove('visible');
+  } else {
+    areaMode = true;
+    document.getElementById('btn-flaeche').classList.add('active');
+    document.getElementById('btn-flaeche').textContent = '✕ Abbrechen';
+    const instr = document.getElementById('instruction');
+    instr.textContent = 'Punkte klicken → Fläche zeichnen · Enter = bestätigen';
+    instr.classList.remove('hidden');
+  }
+});
+
+// Map click handler for area mode
+map.on('click', e => {
+  if (!areaMode) return;
+  areaPoints.push(e.latlng);
+  const m = L.circleMarker(e.latlng, {
+    radius: 4, color: '#ff4444', fillColor: '#ff4444', fillOpacity: 1, weight: 1
+  }).addTo(map);
+  areaTempMarkers.push(m);
+  updateAreaPreview();
+});
+
+// Enter key to confirm
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && areaMode) confirmArea();
 });
 </script>
 </body>
