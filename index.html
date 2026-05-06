@@ -281,6 +281,8 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
         <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
         <div class="p-divider"></div>
         <button class="p-btn" id="btn-gelände" disabled style="opacity:.3;">Gelände ausgeben</button>
+        <div class="p-divider"></div>
+        <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
       </div>
 
       <!-- STATS -->
@@ -583,6 +585,7 @@ function confirmArea(){
   document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
   document.getElementById('instruction').classList.add('hidden');
   document.getElementById('btn-belegen').disabled=false;
+  document.getElementById('btn-export').disabled=false;
   updateAreaStats();
 }
 
@@ -841,6 +844,7 @@ function belegen(){
   dirtyField=false;
   document.getElementById('btn-update').disabled=true;
   document.getElementById('btn-clear').disabled=false;
+  document.getElementById('btn-export').disabled=false;
 
   const totalMod=rows.reduce((s,r)=>s+r.nMod*uk.n,0);
   document.getElementById('st-rows').textContent=`${rows.length}`;
@@ -942,6 +946,101 @@ map.on('dblclick',e=>{
   document.getElementById('btn-measure').textContent='📏 Messen';
   document.getElementById('instruction').classList.add('hidden');
 });
+
+// ── KMZ EXPORT ────────────────────────────────────────────────────────────
+function toKmlCoords(latlngs){
+  return latlngs.map(ll=>`${ll.lng},${ll.lat},0`).join(' ');
+}
+
+function buildKML(){
+  const styles=`
+  <Style id="areaStyle">
+    <LineStyle><color>ff4444ff</color><width>2</width></LineStyle>
+    <PolyStyle><color>330000ff</color></PolyStyle>
+  </Style>
+  <Style id="innerStyle">
+    <LineStyle><color>884444ff</color><width>1</width><gapColor>00000000</gapColor></LineStyle>
+    <PolyStyle><fill>0</fill></PolyStyle>
+  </Style>
+  <Style id="tableStyle">
+    <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
+    <PolyStyle><color>220099ff</color></PolyStyle>
+  </Style>`;
+
+  let placemarks='';
+
+  // 1. Außenfläche
+  if(areaPoints.length>=3){
+    const coords=toKmlCoords([...areaPoints, areaPoints[0]]);
+    placemarks+=`
+    <Placemark>
+      <name>Projektfläche</name>
+      <styleUrl>#areaStyle</styleUrl>
+      <Polygon>
+        <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
+      </Polygon>
+    </Placemark>`;
+  }
+
+  // 2. Tischreihen
+  if(fieldLayers.length>0){
+    // Collect all table rectangles from fieldLayers (L.polygon instances)
+    let tableIdx=0;
+    fieldLayers.forEach(layer=>{
+      if(layer instanceof L.Polygon && layer.options.fillOpacity===0.12){
+        // This is a table rectangle
+        const lls=layer.getLatLngs()[0];
+        const coords=toKmlCoords([...lls, lls[0]]);
+        tableIdx++;
+        placemarks+=`
+    <Placemark>
+      <name>Tischreihe ${tableIdx}</name>
+      <styleUrl>#tableStyle</styleUrl>
+      <Polygon>
+        <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
+      </Polygon>
+    </Placemark>`;
+      }
+    });
+  }
+
+  const kml=`<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>PV-Planung Geländeschnitt</name>
+    <description>Exportiert aus Geländeschnitt PV-Planer</description>
+    ${styles}
+    <Folder>
+      <name>PV-Planung</name>
+      ${placemarks}
+    </Folder>
+  </Document>
+</kml>`;
+  return kml;
+}
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  if(areaPoints.length<3){
+    alert('Bitte erst eine Fläche einzeichnen.');
+    return;
+  }
+
+  const kml=buildKML();
+
+  // KMZ = ZIP mit doc.kml — wir exportieren direkt als .kml (Google Earth öffnet beides)
+  const blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='pv-planung.kml';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Enable export button when area is confirmed
+const origConfirmArea=confirmArea;
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 drawSchnitt();
