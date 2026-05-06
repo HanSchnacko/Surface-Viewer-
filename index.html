@@ -682,10 +682,11 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
     const actualRange = maxEl - minEl;
     const chartW = document.getElementById('modal-chart').offsetWidth || 1000;
     const chartH = document.getElementById('modal-chart').offsetHeight || 480;
-    const trueSpan = dist * (chartH / chartW);  // meters of height = meters of dist * aspect
+    const trueSpan = dist * (chartH / chartW);
     const displayRange = Math.max(actualRange, trueSpan);
     const pad = displayRange * 0.08;
     const midEl = (maxEl + minEl) / 2;
+    // Never start Y axis at 0 unless terrain is actually near 0
 
     document.getElementById('modal-dist').textContent = fmtDist(dist);
     document.getElementById('modal-delta').textContent = `${elB-elA >= 0 ? '+' : ''}${Math.round(elB-elA)} m`;
