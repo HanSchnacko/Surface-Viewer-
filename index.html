@@ -741,8 +741,12 @@ function belegen(){
     }
   }
 
+  const maxMod=rows.length>0?Math.max(...rows.map(r=>r.nMod)):0;
+  const maxW=rows.length>0?Math.max(...rows.map(r=>r.tischB)):0;
   document.getElementById('debug-box').innerHTML+=
-    `<br>Tatsächliche Reihen: ${rows.length} · Module: ${rows.reduce((s,r)=>s+r.nMod*uk.n,0).toLocaleString('de')}`;
+    `<br>Tatsächliche Reihen: ${rows.length} · Module: ${rows.reduce((s,r)=>s+r.nMod*uk.n,0).toLocaleString('de')}`+
+    `<br>Max Module/Reihe: ${maxMod} · Max Tischbreite: ${maxW.toFixed(1)} m`+
+    `<br>Innenfläche X: ${bbI.minX.toFixed(1)} → ${bbI.maxX.toFixed(1)} m`;
 
   // Tische auf Karte zeichnen
   rows.forEach(row=>{
