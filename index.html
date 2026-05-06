@@ -325,9 +325,48 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  width: min(94vw, 520px);
+  width: min(96vw, 900px);
   animation: modalIn 0.22s ease;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: 50px 1fr auto;
+}
+
+#uk-content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#uk-body {
+  padding: 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+#uk-preview {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--panel);
+}
+
+#uk-preview-title {
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+#uk-svg {
+  width: 100%;
+  flex: 1;
 }
 
 #uk-header {
@@ -359,12 +398,7 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 }
 #uk-close:hover { color: var(--text); border-color: var(--border); }
 
-#uk-body {
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+
 
 .uk-field {
   display: flex;
@@ -502,33 +536,63 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
       <h2>UK-Randbedingungen</h2>
       <button id="uk-close">✕</button>
     </div>
-    <div id="uk-body">
-      <div class="uk-field">
-        <div class="uk-label">1 · Modul auswählen</div>
-        <select class="uk-select" id="uk-modul">
-          <option value="1134x2382">1134 mm × 2382 mm</option>
-        </select>
+    <div id="uk-content">
+      <div id="uk-body">
+        <div class="uk-field">
+          <div class="uk-label">Modulabmaß</div>
+          <select class="uk-select" id="uk-modul" onchange="ukDraw()">
+            <option value="1134">1134 mm × 2382 mm</option>
+          </select>
+        </div>
+        <div class="uk-field">
+          <div class="uk-label">Modulanordnung</div>
+          <select class="uk-select" id="uk-anordnung" onchange="ukDraw()">
+            <option value="4">4-Landscape</option>
+            <option value="5">5-Landscape</option>
+            <option value="6" selected>6-Landscape</option>
+          </select>
+        </div>
+        <div class="uk-field">
+          <div class="uk-label">Modulabstand vertikal</div>
+          <select class="uk-select" id="uk-spalt" onchange="ukDraw()">
+            <option value="20" selected>20 mm</option>
+          </select>
+        </div>
+        <div class="uk-field">
+          <div class="uk-label">Anstellwinkel</div>
+          <select class="uk-select" id="uk-winkel" onchange="ukDraw()">
+            <option value="14">14°</option>
+            <option value="18" selected>18°</option>
+            <option value="20">20°</option>
+          </select>
+        </div>
+        <div class="uk-field">
+          <div class="uk-label">Abstand Modulunterkante</div>
+          <select class="uk-select" id="uk-uk" onchange="ukDraw()">
+            <option value="500">0,5 m</option>
+            <option value="800" selected>0,8 m</option>
+            <option value="1000">1,0 m</option>
+          </select>
+        </div>
+        <div class="uk-field">
+          <div class="uk-label">Reihenabstand</div>
+          <select class="uk-select" id="uk-reihe" onchange="ukDraw()">
+            <option value="2000">2,0 m</option>
+            <option value="2500" selected>2,5 m</option>
+            <option value="3000">3,0 m</option>
+          </select>
+        </div>
       </div>
-      <div class="uk-field">
-        <div class="uk-label">2 · Anordnung</div>
-        <select class="uk-select" id="uk-anordnung">
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
-        </select>
-      </div>
-      <div class="uk-field">
-        <div class="uk-label">3 · Anstellwinkel</div>
-        <select class="uk-select" id="uk-winkel">
-          <option value="18">18°</option>
-        </select>
-      </div>
-      <div class="uk-field">
-        <div class="uk-label">4 · Reihenabstand (Achsmaß)</div>
-        <select class="uk-select" id="uk-abstand">
-          <option value="2">2 m</option>
-          <option value="3">3 m</option>
-          <option value="4">4 m</option>
-        </select>
+      <div id="uk-preview">
+        <div id="uk-preview-title">Vorschau Gestellschnitt</div>
+        <svg id="uk-svg" viewBox="0 0 500 220" role="img">
+          <defs>
+            <marker id="uk-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </marker>
+          </defs>
+          <g id="uk-g"></g>
+        </svg>
       </div>
     </div>
     <div id="uk-footer">
@@ -804,8 +868,85 @@ document.getElementById('plz-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') { const q = document.getElementById('plz-input').value.trim(); if (q) searchLocation(q); }
 });
 // ── UK MODAL ───────────────────────────────────────────────────────────────
+const UK_FIXED_SC = (() => {
+  const maxLaengeHor = (6*1134+5*20)*Math.cos(20*Math.PI/180);
+  return 380 / (2*maxLaengeHor + 3000);
+})();
+
+function ukDraw() {
+  const n       = parseInt(document.getElementById('uk-anordnung').value);
+  const modH    = parseFloat(document.getElementById('uk-modul').value);
+  const winkel  = parseFloat(document.getElementById('uk-winkel').value);
+  const abstand = parseFloat(document.getElementById('uk-uk').value);
+  const spalt   = parseFloat(document.getElementById('uk-spalt').value);
+  const reihe   = parseFloat(document.getElementById('uk-reihe').value);
+
+  const LAENGE     = n*modH + (n-1)*spalt;
+  const RAD        = winkel*Math.PI/180;
+  const LAENGE_HOR = LAENGE*Math.cos(RAD);
+  const p          = mm => mm*UK_FIXED_SC;
+
+  const GY = 175;
+  const OX = 40;
+  const ox2 = OX + p(LAENGE_HOR) + p(reihe);
+
+  function drawTisch(ox) {
+    const x1=ox, y1=GY-p(abstand);
+    const x2=x1+p(LAENGE)*Math.cos(RAD), y2=y1-p(LAENGE)*Math.sin(RAD);
+    const pVx=x1+(x2-x1)*0.15, pVy=y1+(y2-y1)*0.15;
+    const pHx=x1+(x2-x1)*0.85, pHy=y1+(y2-y1)*0.85;
+    return {x1,y1,x2,y2,
+      svg:[
+        `<line x1="${pVx}" y1="${pVy}" x2="${pVx}" y2="${GY}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
+        `<line x1="${pHx}" y1="${pHy}" x2="${pHx}" y2="${GY}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
+        `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#4a9eff" stroke-width="2" stroke-linecap="round"/>`,
+      ].join('')
+    };
+  }
+
+  const t1 = drawTisch(OX);
+  const t2 = drawTisch(ox2);
+
+  const dim = `stroke="#3a4a5a" stroke-width="0.5"`;
+  const tc  = `fill="#6b7a8d" font-size="10" font-family="DM Mono, monospace"`;
+
+  let svg = '';
+
+  // Boden
+  svg += `<line x1="${OX-10}" y1="${GY}" x2="${ox2+p(LAENGE_HOR)+20}" y2="${GY}" stroke="#2a3545" stroke-width="1"/>`;
+
+  // Tische
+  svg += t1.svg + t2.svg;
+
+  // Abstand Modulunterkante (vertikal links)
+  const bx = OX-18;
+  svg += `<line x1="${bx}" y1="${GY}" x2="${bx}" y2="${t1.y1}" ${dim} marker-start="url(#uk-arr)" marker-end="url(#uk-arr)"/>`;
+  svg += `<line x1="${bx}" y1="${GY}" x2="${OX}" y2="${GY}" ${dim} stroke-dasharray="2 2"/>`;
+  svg += `<line x1="${bx}" y1="${t1.y1}" x2="${OX}" y2="${t1.y1}" ${dim} stroke-dasharray="2 2"/>`;
+  svg += `<text x="${bx-3}" y="${(GY+t1.y1)/2}" text-anchor="end" dominant-baseline="central" ${tc}>${(abstand/1000).toFixed(1)} m</text>`;
+
+  // Reihenabstand (oben)
+  const topY = Math.min(t1.y2, t2.y2) - 14;
+  const ax1 = OX+p(LAENGE_HOR), ax2 = ox2;
+  svg += `<line x1="${ax1}" y1="${topY}" x2="${ax2}" y2="${topY}" ${dim} marker-start="url(#uk-arr)" marker-end="url(#uk-arr)"/>`;
+  svg += `<line x1="${ax1}" y1="${topY}" x2="${ax1}" y2="${t1.y2}" ${dim} stroke-dasharray="2 2"/>`;
+  svg += `<line x1="${ax2}" y1="${topY}" x2="${ax2}" y2="${t2.y1}" ${dim} stroke-dasharray="2 2"/>`;
+  svg += `<text x="${(ax1+ax2)/2}" y="${topY-6}" text-anchor="middle" ${tc}>${(reihe/1000).toFixed(1)} m</text>`;
+
+  // Winkel (unterhalb Modulplatte)
+  if (winkel > 0) {
+    const wR = 20;
+    svg += `<line x1="${t1.x1}" y1="${t1.y1}" x2="${t1.x1+wR+14}" y2="${t1.y1}" ${dim}/>`;
+    svg += `<path d="M ${t1.x1+wR} ${t1.y1} A ${wR} ${wR} 0 0 1 ${t1.x1+wR*Math.cos(RAD)} ${t1.y1+wR*Math.sin(RAD)}" fill="none" stroke="#3a4a5a" stroke-width="0.5"/>`;
+    svg += `<text x="${t1.x1+wR+6}" y="${t1.y1+12}" ${tc}>${winkel}°</text>`;
+  }
+
+  document.getElementById('uk-g').innerHTML = svg;
+}
+
 document.getElementById('btn-uk').addEventListener('click', () => {
   document.getElementById('uk-overlay').classList.add('open');
+  ukDraw();
 });
 
 function closeUK() { document.getElementById('uk-overlay').classList.remove('open'); }
@@ -817,12 +958,6 @@ document.getElementById('uk-overlay').addEventListener('click', e => {
 });
 
 document.getElementById('uk-apply').addEventListener('click', () => {
-  const modul    = document.getElementById('uk-modul').value;
-  const anordnung = document.getElementById('uk-anordnung').value;
-  const winkel   = parseInt(document.getElementById('uk-winkel').value);
-  const abstand  = parseFloat(document.getElementById('uk-abstand').value);
-  console.log('UK-Konfiguration:', { modul, anordnung, winkel, abstand });
-  // → hier wird später die PV-Tisch-Zeichnung ausgelöst
   closeUK();
 });
 </script>
