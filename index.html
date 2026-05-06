@@ -316,6 +316,51 @@
   .leaflet-control-zoom a:hover { background: var(--panel) !important; color: var(--accent) !important; }
   .leaflet-bar { box-shadow: none !important; }
 
+  /* ── SEARCH BOX ── */
+  #search-box {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    display: flex;
+    gap: 6px;
+    background: rgba(11,14,20,0.92);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    backdrop-filter: blur(8px);
+    width: 280px;
+  }
+
+  #search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+  }
+
+  #search-box input::placeholder { color: var(--muted); }
+
+  #btn-search {
+    flex: none;
+    padding: 4px 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #btn-search:hover { background: #00fdb5; }
+
   /* Responsive */
   @media (max-width: 768px) {
     #main { grid-template-columns: 1fr; grid-template-rows: 60vh 1fr; }
@@ -348,6 +393,10 @@
     <div id="map-wrap">
       <div id="map"></div>
       <div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
+      <div id="search-box">
+        <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="10" />
+        <button id="btn-search">→</button>
+      </div>
     </div>
 
     <div id="panel">
@@ -410,6 +459,31 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
   attribution: 'Tiles © Esri',
   maxZoom: 19
 }).addTo(map);
+
+// ── PLZ / LOCATION SEARCH ─────────────────────────────────────────────────
+async function searchLocation(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=de,at,ch&limit=1&format=json`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+  const data = await res.json();
+  if (data.length === 0) {
+    alert('Ort nicht gefunden. Bitte PLZ oder Ortsname eingeben.');
+    return;
+  }
+  const { lat, lon, display_name } = data[0];
+  map.setView([parseFloat(lat), parseFloat(lon)], 13, { animate: true });
+}
+
+document.getElementById('btn-search').addEventListener('click', () => {
+  const q = document.getElementById('plz-input').value.trim();
+  if (q) searchLocation(q);
+});
+
+document.getElementById('plz-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const q = document.getElementById('plz-input').value.trim();
+    if (q) searchLocation(q);
+  }
+});
 
 // ── STATE ──────────────────────────────────────────────────────────────────
 let pointA = null, pointB = null;
