@@ -503,8 +503,14 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
     const minEl = Math.min(...elevations);
     const elA = elevations[0];
     const elB = elevations[elevations.length-1];
-    const range = Math.max(maxEl - minEl, 10);
-    const pad = Math.max(2, range * 0.25);
+    // Y-axis: scale relative to distance so gentle slopes look gentle
+    // minSpan ensures the vertical range is never less than dist/50
+    // (e.g. 180m distance → min 3.6m span shown; 1km → min 20m span)
+    const actualRange = maxEl - minEl;
+    const minSpan = Math.max(10, dist / 50);
+    const displayRange = Math.max(actualRange, minSpan);
+    const pad = displayRange * 0.15;
+    const midEl = (maxEl + minEl) / 2;
 
     document.getElementById('modal-dist').textContent = fmtDist(dist);
     document.getElementById('modal-delta').textContent = `${elB-elA >= 0 ? '+' : ''}${Math.round(elB-elA)} m`;
@@ -565,8 +571,8 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
           y: {
             ticks: { color:'#6b7a8d', font:{family:'DM Mono',size:11}, callback: v => `${Math.round(v)}m` },
             grid: { color:'#1a2130' }, border: { color:'#2a3545' },
-            min: Math.max(0, minEl - pad),
-            max: maxEl + pad
+            min: Math.max(0, midEl - displayRange / 2 - pad),
+            max: midEl + displayRange / 2 + pad
           }
         }
       }
