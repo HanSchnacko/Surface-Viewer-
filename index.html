@@ -565,7 +565,24 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
   const distances = samplePoints.map((_, i) => ((i / SAMPLES) * dist / 1000).toFixed(4));
 
   try {
-    const elevations = await fetchElevation(samplePoints);
+    const rawElevations = await fetchElevation(samplePoints);
+
+    // Gaussian smoothing to remove raster stepping artefacts
+    function gaussSmooth(data, radius) {
+      const out = [];
+      for (let i = 0; i < data.length; i++) {
+        let sum = 0, weight = 0;
+        for (let j = -radius; j <= radius; j++) {
+          const idx = Math.min(Math.max(i + j, 0), data.length - 1);
+          const w = Math.exp(-(j * j) / (2 * radius * radius / 4));
+          sum += data[idx] * w;
+          weight += w;
+        }
+        out.push(sum / weight);
+      }
+      return out;
+    }
+    const elevations = gaussSmooth(rawElevations, 8);
 
     // Stats
     const maxEl = Math.max(...elevations);
