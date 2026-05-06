@@ -500,6 +500,24 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 }
 #area-info.visible { display: block; }
 
+#area-result {
+  display: none;
+  position: absolute;
+  bottom: 32px;
+  left: 20px;
+  z-index: 500;
+  background: rgba(11,14,20,0.88);
+  border: 1px solid rgba(255,68,68,0.4);
+  border-radius: 5px;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #ff8080;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+#area-result.visible { display: block; }
+
 /* Leaflet overrides */
 .leaflet-control-zoom { border: 1px solid var(--border) !important; margin-top: 58px !important; }
 .leaflet-control-zoom a { background: rgba(11,14,20,0.9) !important; color: var(--text) !important; border-color: var(--border) !important; }
@@ -522,6 +540,7 @@ html, body, #map { width: 100%; height: 100%; margin: 0; padding: 0; overflow: h
 <div id="instruction">Klick auf die Karte → <strong>Punkt A</strong> setzen</div>
 
 <div id="area-info">Fläche: — m²</div>
+<div id="area-result"></div>
 <div id="search-box">
   <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="20"/>
   <button id="btn-search">→</button>
@@ -1059,6 +1078,14 @@ function confirmArea() {
   document.getElementById('btn-flaeche').textContent = '⬡ Fläche definieren';
   document.getElementById('instruction').classList.add('hidden');
   document.getElementById('area-info').classList.remove('visible');
+  // Show persistent result bottom-left
+  const m2final = areaM2(areaPolygon.getLatLngs()[0]);
+  const txt = m2final >= 10000
+    ? `${(m2final/10000).toFixed(2)} ha`
+    : `${Math.round(m2final).toLocaleString('de')} m²`;
+  const res = document.getElementById('area-result');
+  res.textContent = `⬡ ${txt}`;
+  res.classList.add('visible');
 }
 
 document.getElementById('btn-flaeche').addEventListener('click', () => {
