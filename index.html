@@ -316,6 +316,78 @@
   .leaflet-control-zoom a:hover { background: var(--panel) !important; color: var(--accent) !important; }
   .leaflet-bar { box-shadow: none !important; }
 
+  /* ── MODAL ── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(5,8,12,0.85);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+
+  #modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: min(92vw, 900px);
+    height: min(88vh, 680px);
+    display: grid;
+    grid-template-rows: 52px 1fr 56px;
+    overflow: hidden;
+    animation: modalIn 0.25s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  #modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #modal-header h2 {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  #modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    flex: none;
+  }
+  #modal-close:hover { color: var(--text); background: var(--panel); }
+
+  #modal-chart-wrap {
+    position: relative;
+    padding: 20px 24px 8px;
+  }
+
+  #modal-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+  }
+
   /* ── SEARCH BOX ── */
   #search-box {
     position: absolute;
@@ -447,6 +519,24 @@
         <button id="btn-reset">↺ Zurücksetzen</button>
         <button class="primary" id="btn-profile" disabled>Profil berechnen</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <h2 id="modal-title">Geländeprofil</h2>
+      <button id="modal-close">✕</button>
+    </div>
+    <div id="modal-chart-wrap">
+      <canvas id="modal-chart"></canvas>
+    </div>
+    <div id="modal-stats">
+      <div class="stat"><div class="stat-label">Distanz</div><div class="stat-val" id="modal-dist">—</div></div>
+      <div class="stat"><div class="stat-label">Δ Höhe</div><div class="stat-val blue" id="modal-delta">—</div></div>
+      <div class="stat"><div class="stat-label">Max. Höhe</div><div class="stat-val warn" id="modal-max">—</div></div>
     </div>
   </div>
 </div>
@@ -748,6 +838,16 @@ document.getElementById('btn-profile').addEventListener('click', async () => {
     spinner.classList.remove('active');
     btn.disabled = false;
     btn.textContent = 'Profil berechnen';
+  }
+});
+
+// ── MODAL CLOSE ───────────────────────────────────────────────────────────
+document.getElementById('modal-close').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
   }
 });
 
