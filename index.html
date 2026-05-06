@@ -652,15 +652,37 @@ function rectIn(poly,x,y,w,h){const N=12;for(let i=0;i<=N;i++){const fx=x+w*i/N;
 function tischBreite(nMod,hs){return nMod*MOD_B+(nMod-1)*hs;}
 function maxModule(availW,hs){return Math.floor((availW+hs)/(MOD_B+hs));}
 
-function tryRow(inner,rowY,TIEFE,bbI,hs){
-  if(rowY+TIEFE>bbI.maxY)return null;
+// Gibt alle Segmente einer Reihe zurück (unterstützt konkave Polygone)
+function tryRowSegments(inner,rowY,TIEFE,bbI,hs){
+  if(rowY+TIEFE>bbI.maxY)return [];
   const top=hCuts(inner,rowY),bot=hCuts(inner,rowY+TIEFE);
-  if(top.length<2||bot.length<2)return null;
-  const xL=Math.max(top[0],bot[0]),xR=Math.min(top[top.length-1],bot[bot.length-1]);
-  if(xR<=xL)return null;
-  let nMod=maxModule(xR-xL,hs);
-  while(nMod>=MOD_MIN){const tb=tischBreite(nMod,hs),xs=xL+(xR-xL-tb)/2;if(rectIn(inner,xs,rowY,tb,TIEFE))return{xStart:xs,rowY,tischB:tb,nMod};nMod--;}
-  return null;
+  if(top.length<2||bot.length<2)return [];
+
+  // Baue Segmente aus Schnittpunkt-Paaren (links→rechts)
+  // top und bot können mehrere Paare haben bei konkaven Polygonen
+  const nPairs=Math.min(Math.floor(top.length/2),Math.floor(bot.length/2));
+  const segments=[];
+
+  for(let p=0;p<nPairs;p++){
+    const xL=Math.max(top[p*2],bot[p*2]);
+    const xR=Math.min(top[p*2+1],bot[p*2+1]);
+    if(xR<=xL)continue;
+    let nMod=maxModule(xR-xL,hs);
+    while(nMod>=MOD_MIN){
+      const tb=tischBreite(nMod,hs),xs=xL+(xR-xL-tb)/2;
+      if(rectIn(inner,xs,rowY,tb,TIEFE)){
+        segments.push({xStart:xs,rowY,tischB:tb,nMod});
+        break;
+      }
+      nMod--;
+    }
+  }
+  return segments;
+}
+
+function tryRow(inner,rowY,TIEFE,bbI,hs){
+  const segs=tryRowSegments(inner,rowY,TIEFE,bbI,hs);
+  return segs.length>0?segs[0]:null;
 }
 
 function findFirstRow(inner,bbI,TIEFE,hs){let y=bbI.minY;while(y+TIEFE<=bbI.maxY){const r=tryRow(inner,y,TIEFE,bbI,hs);if(r)return r;y+=0.5;}return null;}
@@ -736,14 +758,27 @@ function belegen(){
     `Erwartete Reihen: ~${expectedRows}`;
 
   const rows=[];
-  const r1=findFirstRow(inner,bbI,TIEFE,uk.hspalt);
-  if(r1){
-    rows.push(r1);
-    let ls=r1.rowY+TIEFE;
+  // Finde erste Reihe von Norden
+  let firstY=bbI.minY;
+  let firstSegs=[];
+  while(firstY+TIEFE<=bbI.maxY){
+    firstSegs=tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt);
+    if(firstSegs.length>0)break;
+    firstY+=0.5;
+  }
+  if(firstSegs.length>0){
+    firstSegs.forEach(s=>rows.push(s));
+    let ls=firstY+TIEFE;
     while(true){
-      const ny=ls+uk.reihe;if(ny+TIEFE>bbI.maxY)break;
-      const row=tryRow(inner,ny,TIEFE,bbI,uk.hspalt);
-      if(row){rows.push(row);ls=row.rowY+TIEFE;}else ls=ny+TIEFE;
+      const ny=ls+uk.reihe;
+      if(ny+TIEFE>bbI.maxY)break;
+      const segs=tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt);
+      if(segs.length>0){
+        segs.forEach(s=>rows.push(s));
+        ls=ny+TIEFE;
+      } else {
+        ls=ny+TIEFE;
+      }
       if(ls>bbI.maxY)break;
     }
   }
