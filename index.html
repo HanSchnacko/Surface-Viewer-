@@ -45,7 +45,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 #measure-badge{display:none;top:60px;right:18px;padding:7px 14px;color:#ffdd44;border-color:rgba(255,221,68,.3);}
 
 /* PANEL */
-#panel{background:var(--surface);border-left:1px solid var(--border);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;height:100%;}
+#panel{
+  background:var(--surface);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;height:100%;
+}
 
 /* FLÄCHEN LIST */
 #areas-header{padding:10px 16px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
@@ -54,7 +57,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 #btn-new-area:hover{background:#00fdb5;}
 #btn-new-area.active{background:rgba(255,85,51,.2);color:#ff8060;border:1px solid rgba(255,85,51,.5);}
 
-#areas-list{border-bottom:1px solid var(--border);flex-shrink:0;max-height:160px;overflow-y:auto;}
+#areas-list{border-bottom:1px solid var(--border);flex-shrink:0;max-height:140px;overflow-y:auto;}
 .area-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(35,47,66,.5);}
 .area-item:last-child{border-bottom:none;}
 .area-item:hover{background:var(--panel);}
@@ -70,7 +73,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .area-empty{padding:14px 16px;font-size:.72rem;color:var(--muted);text-align:center;}
 
 /* SCROLLABLE CONFIG */
-#panel-scroll{overflow-y:auto;flex:1;}
+#panel-scroll{overflow-y:auto;flex:1;min-height:0;}
 .p-section{border-bottom:1px solid var(--border);}
 .acc-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;transition:background .15s;}
 .acc-header:hover{background:var(--panel);}
@@ -106,7 +109,7 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 .p-divider{height:1px;background:var(--border);margin:2px 0;}
 
 /* STATS */
-#area-stats{padding:7px 16px;font-size:.68rem;color:var(--muted);line-height:1.8;border-bottom:1px solid var(--border);display:none;}
+#area-stats{padding:7px 16px;font-size:.68rem;color:var(--muted);line-height:1.8;border-bottom:1px solid var(--border);display:none;flex-shrink:0;}
 #area-stats.show{display:block;}
 .stat-line span{color:var(--text);}
 
