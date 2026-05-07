@@ -742,9 +742,23 @@ function updateLabels(){
     const line2=mods>0?`<br><span style="color:#aaa;">${a.rows.length} Reihen · ${mods.toLocaleString('de')} Module</span>`:'';
     const icon=L.divIcon({
       className:'',
-      html:`<div style="background:rgba(10,13,18,.88);border:1px solid ${a.color};border-radius:5px;padding:5px 10px;font-family:DM Mono,monospace;font-size:11px;color:${a.color};white-space:nowrap;text-align:center;pointer-events:none;">
-        <b>${a.name}</b><br>${m2txt}${line2}</div>`,
-      iconAnchor:[60,30]
+      html:`<div style="
+        background:rgba(10,13,18,.82);
+        border-left:3px solid ${a.color};
+        border-radius:4px;
+        padding:7px 12px;
+        font-family:Syne,sans-serif;
+        white-space:nowrap;
+        text-align:left;
+        pointer-events:none;
+        box-shadow:0 2px 12px rgba(0,0,0,.5);
+        backdrop-filter:blur(6px);
+      ">
+        <div style="font-size:13px;font-weight:700;color:${a.color};letter-spacing:.04em;">${a.name}</div>
+        <div style="font-size:11px;color:#dde6f0;margin-top:2px;font-family:DM Mono,monospace;">${m2txt}</div>
+        ${mods>0?`<div style="font-size:10px;color:#5a7090;margin-top:1px;font-family:DM Mono,monospace;">${a.rows.length} Reihen &nbsp;·&nbsp; ${mods.toLocaleString('de')} Module</div>`:''}
+      </div>`,
+      iconAnchor:[0,0]
     });
     const marker=L.marker([lat,lng],{icon,interactive:false}).addTo(map);
     labelMarkers.push(marker);
