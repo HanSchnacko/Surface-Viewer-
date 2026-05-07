@@ -953,67 +953,110 @@ function toKmlCoords(latlngs){
 }
 
 function buildKML(){
+  const uk=getUK();
+  const RAD=uk.winkel*Math.PI/180;
+  // Höhen der Tischkanten
+  const hFront=uk.uk;                              // UK vorne (Nordkante)
+  const TIEFE_PROJ=(uk.n*MOD_H+(uk.n-1)*uk.vspalt)*Math.cos(RAD); // proj. Tiefe
+  const hBack=hFront+TIEFE_PROJ*Math.tan(RAD);    // OK hinten
+
   const styles=`
   <Style id="areaStyle">
     <LineStyle><color>ff4444ff</color><width>2</width></LineStyle>
-    <PolyStyle><color>330000ff</color></PolyStyle>
+    <PolyStyle><color>220000ff</color></PolyStyle>
   </Style>
-  <Style id="innerStyle">
-    <LineStyle><color>884444ff</color><width>1</width><gapColor>00000000</gapColor></LineStyle>
-    <PolyStyle><fill>0</fill></PolyStyle>
-  </Style>
-  <Style id="tableStyle">
+  <Style id="tableStyle2d">
     <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
     <PolyStyle><color>220099ff</color></PolyStyle>
+  </Style>
+  <Style id="tableStyle3d">
+    <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
+    <PolyStyle><color>aa0099ff</color></PolyStyle>
   </Style>`;
 
   let placemarks='';
 
-  // 1. Außenfläche
+  // 1. Außenfläche (2D, auf Boden)
   if(areaPoints.length>=3){
-    const coords=toKmlCoords([...areaPoints, areaPoints[0]]);
+    const coords=toKmlCoords([...areaPoints,areaPoints[0]]);
     placemarks+=`
     <Placemark>
       <name>Projektfläche</name>
       <styleUrl>#areaStyle</styleUrl>
       <Polygon>
-        <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
+        <altitudeMode>clampToGround</altitudeMode>
+        <outerBoundaryIs><LinearRing>
+          <coordinates>${coords}</coordinates>
+        </LinearRing></outerBoundaryIs>
       </Polygon>
     </Placemark>`;
   }
 
-  // 2. Tischreihen
-  if(fieldLayers.length>0){
-    // Collect all table rectangles from fieldLayers (L.polygon instances)
-    let tableIdx=0;
-    fieldLayers.forEach(layer=>{
-      if(layer instanceof L.Polygon && layer.options.fillOpacity===0.12){
-        // This is a table rectangle
-        const lls=layer.getLatLngs()[0];
-        const coords=toKmlCoords([...lls, lls[0]]);
-        tableIdx++;
-        placemarks+=`
+  // 2. Tischreihen — 3D geneigt
+  // Jeder Layer ist ein L.polygon mit 4 Ecken [NW, NE, SE, SW]
+  // NW+NE = Nordkante = Vorderseite = hFront
+  // SE+SW = Südkante  = Rückseite  = hBack
+  let tableIdx=0;
+  fieldLayers.forEach(layer=>{
+    if(!(layer instanceof L.Polygon)) return;
+    if(layer.options.fillOpacity!==0.12) return;
+    const lls=layer.getLatLngs()[0];
+    if(lls.length<4) return;
+    tableIdx++;
+
+    // Ecken: Leaflet zeichnet [NW, NE, SE, SW] (im Uhrzeigersinn)
+    // NW=lls[0], NE=lls[1], SE=lls[2], SW=lls[3]
+    const NW=lls[0],NE=lls[1],SE=lls[2],SW=lls[3];
+
+    // 3D Koordinaten: lng,lat,höhe
+    const c_NW=`${NW.lng},${NW.lat},${hFront}`;
+    const c_NE=`${NE.lng},${NE.lat},${hFront}`;
+    const c_SE=`${SE.lng},${SE.lat},${hBack}`;
+    const c_SW=`${SW.lng},${SW.lat},${hBack}`;
+
+    // Modulplatte als 3D-Polygon (geneigtes Rechteck)
+    placemarks+=`
     <Placemark>
       <name>Tischreihe ${tableIdx}</name>
-      <styleUrl>#tableStyle</styleUrl>
+      <styleUrl>#tableStyle3d</styleUrl>
       <Polygon>
-        <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <outerBoundaryIs><LinearRing>
+          <coordinates>${c_NW} ${c_NE} ${c_SE} ${c_SW} ${c_NW}</coordinates>
+        </LinearRing></outerBoundaryIs>
       </Polygon>
     </Placemark>`;
-      }
-    });
-  }
+
+    // Stützen als Linien (vorne + hinten)
+    // Vordere Stütze: Mitte Nordkante, von Boden bis hFront
+    const midN_lat=(NW.lat+NE.lat)/2, midN_lng=(NW.lng+NE.lng)/2;
+    const midS_lat=(SW.lat+SE.lat)/2, midS_lng=(SW.lng+SE.lng)/2;
+    placemarks+=`
+    <Placemark>
+      <name>Stütze vorne ${tableIdx}</name>
+      <styleUrl>#tableStyle3d</styleUrl>
+      <LineString>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <coordinates>${midN_lng},${midN_lat},0 ${midN_lng},${midN_lat},${hFront}</coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+      <name>Stütze hinten ${tableIdx}</name>
+      <styleUrl>#tableStyle3d</styleUrl>
+      <LineString>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <coordinates>${midS_lng},${midS_lat},0 ${midS_lng},${midS_lat},${hBack}</coordinates>
+      </LineString>
+    </Placemark>`;
+  });
 
   const kml=`<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>PV-Planung Geländeschnitt</name>
-    <description>Exportiert aus Geländeschnitt PV-Planer</description>
+    <description>Winkel: ${uk.winkel}° · UK vorne: ${hFront.toFixed(2)}m · UK hinten: ${hBack.toFixed(2)}m</description>
     ${styles}
-    <Folder>
-      <name>PV-Planung</name>
-      ${placemarks}
-    </Folder>
+    ${placemarks}
   </Document>
 </kml>`;
   return kml;
