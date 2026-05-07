@@ -226,6 +226,12 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
         <button class="p-btn blue" id="btn-update" disabled>↺ Update Belegung</button>
         <div class="p-divider"></div>
         <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="export-mode" class="fsel" style="flex:1;font-size:.68rem;padding:5px 8px;">
+            <option value="2d">2D (Draufsicht)</option>
+            <option value="3d" selected>3D (geneigt)</option>
+          </select>
+        </div>
         <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
       </div>
     </div>
@@ -706,9 +712,7 @@ function belegen(){
       const llCorners=corners.map(c=>localToLatLng(c,origin));
       const rect=L.polygon(llCorners,{color:a.color,weight:1.5,fillColor:a.color,fillOpacity:.15}).addTo(map);
       a.fieldLayers.push(rect);
-      // Module
-      const mods=makeModulesSued(row.xStart,row.rowY,row.tischB,TIEFE,uk.n,uk.winkel,uk.vspalt);
-      drawModulesOnMap(mods,origin,a.color,a.fieldLayers);
+
     });
 
   } else {
@@ -729,7 +733,7 @@ function belegen(){
         ];
         const rectW=L.polygon(cornersW.map(c=>localToLatLng(c,origin)),{color:colorW,weight:1.5,fillColor:colorW,fillOpacity:.15}).addTo(map);
         a.fieldLayers.push(rectW);
-        drawModulesOnMap(makeModulesWO(pr.colW,pr.yStart,pr.tw,pr.h,uk.n,uk.winkel,uk.vspalt),origin,colorW,a.fieldLayers);
+
 
         // Tisch Ost (grün)
         const cornersO=[
@@ -740,7 +744,7 @@ function belegen(){
         ];
         const rectO=L.polygon(cornersO.map(c=>localToLatLng(c,origin)),{color:colorO,weight:1.5,fillColor:colorO,fillOpacity:.15}).addTo(map);
         a.fieldLayers.push(rectO);
-        drawModulesOnMap(makeModulesWO(pr.colO,pr.yStart,pr.tw,pr.h,uk.n,uk.winkel,uk.vspalt),origin,colorO,a.fieldLayers);
+
 
         rows.push({xStart:pr.colW,rowY:pr.yStart,tischB:pr.tw*2+uk.ridge,nMod:pr.n*2,side:'wo'});
       });
@@ -782,6 +786,7 @@ document.getElementById('btn-clear').addEventListener('click',()=>{
 // ── KMZ EXPORT ────────────────────────────────────────────────────────────
 document.getElementById('btn-export').addEventListener('click',()=>{
   if(areas.length===0)return;
+  const exportMode=document.getElementById('export-mode').value;
   const uk=getUK();
   const RAD=uk.winkel*Math.PI/180;
   const hFront=uk.uk;
