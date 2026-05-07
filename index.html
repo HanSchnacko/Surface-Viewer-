@@ -829,11 +829,14 @@ function belegen(){
 
   // Tische auf Karte zeichnen
   rows.forEach(row=>{
+    // Ecken im Uhrzeigersinn: NW→NE→SE→SW
+    // rowY = Nordkante (hohe Seite, Rückseite nach Norden)
+    // rowY+TIEFE = Südkante (niedrige Seite, Vorderseite nach Süden)
     const corners=[
-      {x:row.xStart,       y:row.rowY},
-      {x:row.xStart+row.tischB, y:row.rowY},
-      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
-      {x:row.xStart,       y:row.rowY+TIEFE},
+      {x:row.xStart,            y:row.rowY},        // NW (Nord-West, hohe Kante)
+      {x:row.xStart+row.tischB, y:row.rowY},        // NE (Nord-Ost, hohe Kante)
+      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},  // SE (Süd-Ost, niedrige Kante)
+      {x:row.xStart,            y:row.rowY+TIEFE},  // SW (Süd-West, niedrige Kante)
     ];
     const llCorners=corners.map(c=>localToLatLng(c,origin));
     const rect=L.polygon(llCorners,{color:'#4a9eff',weight:1.5,fillColor:'#4a9eff',fillOpacity:.12}).addTo(map);
@@ -1004,15 +1007,17 @@ function buildKML(){
     if(lls.length<4) return;
     tableIdx++;
 
-    // Ecken: Leaflet zeichnet [NW, NE, SE, SW] (im Uhrzeigersinn)
-    // NW=lls[0], NE=lls[1], SE=lls[2], SW=lls[3]
+    // Ecken: [NW, NE, SE, SW] im Uhrzeigersinn
+    // NW/NE = Nordkante = hohe Kante (hBack)
+    // SE/SW = Südkante  = niedrige Kante (hFront)
     const NW=lls[0],NE=lls[1],SE=lls[2],SW=lls[3];
 
     // 3D Koordinaten: lng,lat,höhe
-    const c_NW=`${NW.lng},${NW.lat},${hFront}`;
-    const c_NE=`${NE.lng},${NE.lat},${hFront}`;
-    const c_SE=`${SE.lng},${SE.lat},${hBack}`;
-    const c_SW=`${SW.lng},${SW.lat},${hBack}`;
+    // Südseite = niedrige Kante (UK vorne), Nordseite = hohe Kante (UK hinten)
+    const c_NW=`${NW.lng},${NW.lat},${hBack}`;
+    const c_NE=`${NE.lng},${NE.lat},${hBack}`;
+    const c_SE=`${SE.lng},${SE.lat},${hFront}`;
+    const c_SW=`${SW.lng},${SW.lat},${hFront}`;
 
     // Modulplatte als 3D-Polygon (geneigtes Rechteck)
     placemarks+=`
@@ -1033,19 +1038,19 @@ function buildKML(){
     const midS_lat=(SW.lat+SE.lat)/2, midS_lng=(SW.lng+SE.lng)/2;
     placemarks+=`
     <Placemark>
-      <name>Stütze vorne ${tableIdx}</name>
+      <name>Stütze Nord (hoch) ${tableIdx}</name>
       <styleUrl>#tableStyle3d</styleUrl>
       <LineString>
         <altitudeMode>relativeToGround</altitudeMode>
-        <coordinates>${midN_lng},${midN_lat},0 ${midN_lng},${midN_lat},${hFront}</coordinates>
+        <coordinates>${midN_lng},${midN_lat},0 ${midN_lng},${midN_lat},${hBack}</coordinates>
       </LineString>
     </Placemark>
     <Placemark>
-      <name>Stütze hinten ${tableIdx}</name>
+      <name>Stütze Süd (niedrig) ${tableIdx}</name>
       <styleUrl>#tableStyle3d</styleUrl>
       <LineString>
         <altitudeMode>relativeToGround</altitudeMode>
-        <coordinates>${midS_lng},${midS_lat},0 ${midS_lng},${midS_lat},${hBack}</coordinates>
+        <coordinates>${midS_lng},${midS_lat},0 ${midS_lng},${midS_lat},${hFront}</coordinates>
       </LineString>
     </Placemark>`;
   });
