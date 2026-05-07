@@ -100,6 +100,15 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 #area-stats{padding:7px 16px;font-size:.68rem;color:var(--muted);line-height:1.8;border-bottom:1px solid var(--border);display:none;flex-shrink:0;}
 #area-stats.show{display:block;}
 .stat-line span{color:var(--text);}
+/* LASTZONEN */
+#zone-stats{padding:7px 16px;font-size:.68rem;color:var(--muted);line-height:1.9;border-bottom:1px solid var(--border);display:none;flex-shrink:0;}
+#zone-stats.show{display:block;}
+.zone-row{display:flex;justify-content:space-between;align-items:center;}
+.zone-label{color:var(--muted);}
+.zone-val{font-family:var(--font);font-weight:700;font-size:.82rem;}
+.zone-wlz{color:#4a9eff;}
+.zone-slz{color:#00e5a0;}
+.zone-loading{color:var(--muted);font-style:italic;}
 
 /* Leaflet */
 .leaflet-control-zoom{border:1px solid var(--border)!important;margin-top:58px!important;}
@@ -217,6 +226,17 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
           <div class="stat-line">Fläche: <span id="st-area">—</span></div>
           <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
           <div class="stat-line">Module: <span id="st-mods">—</span></div>
+        </div>
+        <!-- LASTZONEN -->
+        <div id="zone-stats">
+          <div class="zone-row">
+            <span class="zone-label">Windlastzone</span>
+            <span class="zone-val zone-wlz" id="zone-wlz">—</span>
+          </div>
+          <div class="zone-row">
+            <span class="zone-label">Schneelastzone</span>
+            <span class="zone-val zone-slz" id="zone-slz">—</span>
+          </div>
         </div>
       </div>
 
@@ -395,6 +415,7 @@ function setActiveArea(id){
   if(a){
     setUKFromArea(a);
     updateStats(a);
+    updateZoneStats(a);
     document.getElementById('btn-belegen').disabled=false;
     document.getElementById('btn-clear').disabled=a.fieldLayers.length===0;
     document.getElementById('btn-update').disabled=a.fieldLayers.length===0;
@@ -945,8 +966,107 @@ document.getElementById('btn-labels').addEventListener('click',()=>{
   updateLabels();
 });
 
+// ── LASTZONEN ─────────────────────────────────────────────────────────────
+// KML-Dateien liegen im selben Repo wie index.html
+const KML_WIND  = 'dlubal_wind_zones%201%201.kml';
+const KML_SNOW  = 'dlubal_snowload_zones%201%201.kml';
+
+let windZones=null, snowZones=null;
+
+// Parse KML → Array of {name, rings[]}
+// rings = Array of coordinate arrays [{lat,lng}]
+function parseKML(xmlText){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xmlText,'application/xml');
+  const placemarks=doc.querySelectorAll('Placemark');
+  const zones=[];
+  placemarks.forEach(pm=>{
+    const name=pm.querySelector('name')?.textContent?.trim();
+    if(!name||name==='N/A')return;
+    const rings=[];
+    pm.querySelectorAll('LinearRing coordinates, coordinates').forEach(coordEl=>{
+      const pts=coordEl.textContent.trim().split(/\s+/).map(c=>{
+        const parts=c.split(',');
+        if(parts.length<2)return null;
+        return{lng:parseFloat(parts[0]),lat:parseFloat(parts[1])};
+      }).filter(Boolean);
+      if(pts.length>=3)rings.push(pts);
+    });
+    if(rings.length>0)zones.push({name,rings});
+  });
+  return zones;
+}
+
+// Point-in-polygon (ray casting)
+function pointInRing(ring,lat,lng){
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i].lng,yi=ring[i].lat;
+    const xj=ring[j].lng,yj=ring[j].lat;
+    if(((yi>lat)!==(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))
+      inside=!inside;
+  }
+  return inside;
+}
+
+function findZone(zones,lat,lng){
+  for(const z of zones){
+    for(const ring of z.rings){
+      if(pointInRing(ring,lat,lng))return z.name;
+    }
+  }
+  return 'N/A';
+}
+
+// Lade beide KML-Dateien beim Start
+async function loadZoneKMLs(){
+  try{
+    const [windRes,snowRes]=await Promise.all([
+      fetch(KML_WIND),
+      fetch(KML_SNOW)
+    ]);
+    if(windRes.ok) windZones=parseKML(await windRes.text());
+    if(snowRes.ok) snowZones=parseKML(await snowRes.text());
+    console.log(`Lastzonen geladen: ${windZones?.length||0} Wind-Polygone, ${snowZones?.length||0} Schnee-Polygone`);
+  }catch(err){
+    console.warn('Lastzonen konnten nicht geladen werden:',err);
+  }
+}
+
+function updateZoneStats(area){
+  const el=document.getElementById('zone-stats');
+  const wlzEl=document.getElementById('zone-wlz');
+  const slzEl=document.getElementById('zone-slz');
+
+  if(!area||!area.points.length){el.classList.remove('show');return;}
+
+  // Schwerpunkt der Fläche
+  let lat=0,lng=0;
+  area.points.forEach(p=>{lat+=p.lat;lng+=p.lng;});
+  lat/=area.points.length;lng/=area.points.length;
+
+  el.classList.add('show');
+
+  if(!windZones||!snowZones){
+    wlzEl.textContent='Wird geladen…';
+    wlzEl.className='zone-val zone-loading';
+    slzEl.textContent='Wird geladen…';
+    slzEl.className='zone-val zone-loading';
+    return;
+  }
+
+  const wlz=findZone(windZones,lat,lng);
+  const slz=findZone(snowZones,lat,lng);
+
+  wlzEl.textContent=wlz==='N/A'?'Nicht gefunden':`WZ ${wlz}`;
+  wlzEl.className='zone-val zone-wlz';
+  slzEl.textContent=slz==='N/A'?'Nicht gefunden':`SLZ ${slz}`;
+  slzEl.className='zone-val zone-slz';
+}
+
 // ── INIT ───────────────────────────────────────────────────────────────────
 drawSchnitt();
+loadZoneKMLs(); // Lastzonen im Hintergrund laden
 </script>
 </body>
 </html>
