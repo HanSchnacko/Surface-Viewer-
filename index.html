@@ -57,20 +57,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 #btn-new-area:hover{background:#00fdb5;}
 #btn-new-area.active{background:rgba(255,85,51,.2);color:#ff8060;border:1px solid rgba(255,85,51,.5);}
 
-#areas-list{border-bottom:1px solid var(--border);flex-shrink:0;max-height:140px;overflow-y:auto;}
-.area-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(35,47,66,.5);}
-.area-item:last-child{border-bottom:none;}
-.area-item:hover{background:var(--panel);}
-.area-item.active{background:var(--panel2);}
-.area-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.area-info{flex:1;min-width:0;}
-.area-name{font-size:.76rem;font-weight:500;color:var(--text);}
-.area-sub{font-size:.65rem;color:var(--muted);margin-top:1px;}
-.area-actions{display:flex;gap:4px;}
-.area-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 5px;border-radius:3px;transition:all .15s;}
-.area-btn:hover{color:var(--text);background:var(--panel);}
-.area-btn.danger:hover{color:var(--warn);}
-.area-empty{padding:14px 16px;font-size:.72rem;color:var(--muted);text-align:center;}
+#areas-select-wrap{border-bottom:1px solid var(--border);flex-shrink:0;}
+#areas-select-wrap .fsel{border-radius:0;border-left:none;border-right:none;border-top:none;font-size:.76rem;}
 
 /* SCROLLABLE CONFIG */
 #panel-scroll{overflow-y:auto;flex:1;min-height:0;}
@@ -148,15 +136,18 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
     <!-- RIGHT PANEL -->
     <div id="panel">
 
-      <!-- FLÄCHEN HEADER -->
+      <!-- FLÄCHEN ROW -->
       <div id="areas-header">
-        <div id="areas-title">Flächen</div>
-        <button id="btn-new-area">+ Neue Fläche</button>
+        <div id="areas-title">Fläche</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button id="btn-labels" title="Flächenbeschriftung ein/aus" style="background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--muted);font-family:var(--mono);font-size:.7rem;padding:3px 8px;cursor:pointer;">🏷 Labels</button>
+          <button id="btn-new-area">+ Neu</button>
+        </div>
       </div>
-
-      <!-- FLÄCHEN LIST -->
-      <div id="areas-list">
-        <div class="area-empty" id="areas-empty">Noch keine Fläche eingezeichnet</div>
+      <div id="areas-select-wrap">
+        <select id="areas-select" class="fsel" style="margin:0;border-radius:0;border-left:none;border-right:none;border-top:none;">
+          <option value="">— Keine Fläche ausgewählt —</option>
+        </select>
       </div>
 
       <!-- SCROLLABLE CONFIG -->
@@ -333,40 +324,45 @@ document.getElementById('acc-uk-hdr').addEventListener('click',()=>{
 
 // ── AREA LIST RENDER ──────────────────────────────────────────────────────
 function renderAreaList(){
-  const list=document.getElementById('areas-list');
-  const empty=document.getElementById('areas-empty');
-  if(areas.length===0){
-    list.innerHTML='';
-    list.appendChild(empty);
-    empty.style.display='block';
-    return;
-  }
-  empty.style.display='none';
-  list.innerHTML='';
+  const sel=document.getElementById('areas-select');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">— Fläche auswählen —</option>';
   areas.forEach(a=>{
     const m2=areaM2(a.points);
     const m2txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
     const mods=a.rows.reduce((s,r)=>s+r.nMod*a.uk.n,0);
-    const sub=a.rows.length>0?`${a.rows.length} Reihen · ${mods} Module · ${m2txt}`:m2txt;
-    const div=document.createElement('div');
-    div.className='area-item'+(a.id===activeAreaId?' active':'');
-    div.innerHTML=`
-      <div class="area-color" style="background:${a.color}"></div>
-      <div class="area-info">
-        <div class="area-name">${a.name}</div>
-        <div class="area-sub">${sub}</div>
-      </div>
-      <div class="area-actions">
-        <button class="area-btn" title="Belegen" onclick="setActiveArea('${a.id}');belegen();">⚡</button>
-        <button class="area-btn danger" title="Löschen" onclick="deleteArea('${a.id}')">✕</button>
-      </div>`;
-    div.addEventListener('click',e=>{
-      if(e.target.closest('.area-btn'))return;
-      setActiveArea(a.id);
-    });
-    list.appendChild(div);
+    const sub=a.rows.length>0?` · ${a.rows.length}R · ${mods}M`:'';
+    const opt=document.createElement('option');
+    opt.value=a.id;
+    opt.textContent=`${a.name}  ${m2txt}${sub}`;
+    opt.style.background=a.color+'22';
+    if(a.id===activeAreaId)opt.selected=true;
+    sel.appendChild(opt);
   });
+  // Delete button in header
+  updateDeleteBtn();
 }
+
+function updateDeleteBtn(){
+  const existing=document.getElementById('btn-delete-area');
+  if(existing)existing.remove();
+  const a=getActiveArea();
+  if(!a)return;
+  const hdr=document.getElementById('areas-header');
+  const btn=document.createElement('button');
+  btn.id='btn-delete-area';
+  btn.title='Fläche löschen';
+  btn.textContent='✕';
+  btn.style.cssText='background:none;border:none;color:var(--warn);cursor:pointer;font-size:.9rem;padding:2px 6px;';
+  btn.addEventListener('click',()=>deleteArea(a.id));
+  hdr.querySelector('div').appendChild(btn);
+}
+
+document.getElementById('areas-select').addEventListener('change',e=>{
+  if(e.target.value)setActiveArea(e.target.value);
+  else{activeAreaId=null;document.getElementById('btn-belegen').disabled=true;document.getElementById('area-stats').classList.remove('show');}
+  updateDeleteBtn();
+});
 
 function setActiveArea(id){
   activeAreaId=id;
@@ -596,6 +592,7 @@ function belegen(){
   a.rows=rows;
   updateStats(a);
   renderAreaList();
+  updateLabels();
   document.getElementById('btn-clear').disabled=false;
   document.getElementById('btn-update').disabled=false;
   document.getElementById('btn-export').disabled=false;
@@ -723,6 +720,43 @@ map.on('dblclick',e=>{
   document.getElementById('btn-measure').classList.remove('measure-active');
   document.getElementById('btn-measure').textContent='📏 Messen';
   document.getElementById('instruction').classList.add('hidden');
+});
+
+// ── FLÄCHENBESCHRIFTUNG ───────────────────────────────────────────────────
+let labelsVisible=false;
+const labelMarkers=[];
+
+function updateLabels(){
+  labelMarkers.forEach(m=>map.removeLayer(m));
+  labelMarkers.length=0;
+  if(!labelsVisible)return;
+  areas.forEach(a=>{
+    if(!a.points.length)return;
+    // Schwerpunkt berechnen
+    let lat=0,lng=0;
+    a.points.forEach(p=>{lat+=p.lat;lng+=p.lng;});
+    lat/=a.points.length;lng/=a.points.length;
+    const m2=areaM2(a.points);
+    const m2txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
+    const mods=a.rows.reduce((s,r)=>s+r.nMod*a.uk.n,0);
+    const line2=mods>0?`<br><span style="color:#aaa;">${a.rows.length} Reihen · ${mods.toLocaleString('de')} Module</span>`:'';
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="background:rgba(10,13,18,.88);border:1px solid ${a.color};border-radius:5px;padding:5px 10px;font-family:DM Mono,monospace;font-size:11px;color:${a.color};white-space:nowrap;text-align:center;pointer-events:none;">
+        <b>${a.name}</b><br>${m2txt}${line2}</div>`,
+      iconAnchor:[60,30]
+    });
+    const marker=L.marker([lat,lng],{icon,interactive:false}).addTo(map);
+    labelMarkers.push(marker);
+  });
+}
+
+document.getElementById('btn-labels').addEventListener('click',()=>{
+  labelsVisible=!labelsVisible;
+  const btn=document.getElementById('btn-labels');
+  btn.style.color=labelsVisible?'var(--accent)':'var(--muted)';
+  btn.style.borderColor=labelsVisible?'var(--accent)':'var(--border)';
+  updateLabels();
 });
 
 // ── INIT ───────────────────────────────────────────────────────────────────
