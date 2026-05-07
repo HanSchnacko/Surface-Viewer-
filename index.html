@@ -14,140 +14,87 @@
   --bg:#0a0d12;--surface:#111620;--panel:#161d28;--panel2:#1c2535;
   --border:#232f42;--border2:#2d3e56;
   --accent:#00e5a0;--accent2:#0080ff;--warn:#ff5533;
-  --text:#dde6f0;--muted:#5a7090;--dimmed:#3a5070;
+  --text:#dde6f0;--muted:#5a7090;
   --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
   --radius:6px;
 }
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--mono);}
-
-/* ── LAYOUT ── */
 #app{display:grid;grid-template-rows:48px 1fr;height:100vh;}
 #main{display:grid;grid-template-columns:1fr 320px;overflow:hidden;}
 
-/* ── HEADER ── */
-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 18px;background:var(--surface);
-  border-bottom:1px solid var(--border);z-index:100;
-}
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);z-index:100;}
 .logo{font-family:var(--font);font-weight:800;font-size:1rem;letter-spacing:.06em;color:var(--accent);}
 .logo span{color:var(--text);}
-.header-status{display:flex;gap:16px;font-size:.68rem;color:var(--muted);}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:5px;transition:background .3s;}
-.dot.on{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.hdr-right{display:flex;gap:12px;align-items:center;font-size:.68rem;color:var(--muted);}
 
-/* ── MAP ── */
+/* MAP */
 #map-wrap{position:relative;overflow:hidden;}
 #map{width:100%;height:100%;}
-
-/* Map overlays */
-.map-overlay{
-  position:absolute;z-index:500;
-  background:rgba(10,13,18,.9);
-  border:1px solid var(--border);border-radius:var(--radius);
-  backdrop-filter:blur(8px);font-size:.74rem;font-family:var(--mono);
-}
+.map-overlay{position:absolute;z-index:500;background:rgba(10,13,18,.9);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(8px);font-size:.74rem;font-family:var(--mono);}
 #search-box{bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:6px;padding:7px 10px;width:300px;}
 #search-box input{flex:1;background:transparent;border:none;outline:none;color:var(--text);}
 #search-box input::placeholder{color:var(--muted);}
 #search-btn{background:var(--accent);color:#000;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-family:var(--mono);font-size:.72rem;font-weight:500;}
-
 #instruction{top:60px;left:50%;transform:translateX(-50%);padding:7px 16px;color:var(--text);pointer-events:none;transition:opacity .3s;white-space:nowrap;}
 #instruction.hidden{opacity:0;}
-
-#area-badge{bottom:20px;left:18px;padding:5px 12px;color:var(--accent);border-color:rgba(0,229,160,.3);display:none;}
-#area-badge.show{display:block;}
-
-/* Map action buttons */
 #map-btns{position:absolute;bottom:20px;right:18px;z-index:500;display:flex;flex-direction:column;gap:7px;}
-.map-btn{
-  padding:9px 16px;border-radius:var(--radius);font-family:var(--mono);font-size:.72rem;
-  font-weight:500;cursor:pointer;border:1px solid var(--border);
-  backdrop-filter:blur(8px);transition:all .2s;letter-spacing:.03em;text-align:center;
-  background:rgba(10,13,18,.88);color:var(--muted);
-}
+.map-btn{padding:9px 16px;border-radius:var(--radius);font-family:var(--mono);font-size:.72rem;font-weight:500;cursor:pointer;border:1px solid var(--border);backdrop-filter:blur(8px);transition:all .2s;text-align:center;background:rgba(10,13,18,.88);color:var(--muted);}
 .map-btn:hover{color:var(--text);border-color:var(--muted);}
-.map-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);}
-.map-btn.primary:hover{background:#00fdb5;}
-.map-btn.danger{color:var(--warn);border-color:rgba(255,85,51,.3);}
-.map-btn.danger:hover{background:rgba(255,85,51,.12);border-color:var(--warn);}
-.map-btn.active{background:rgba(255,85,51,.12);color:#ff8060;border-color:rgba(255,85,51,.5);}
-.map-btn:disabled{opacity:.3;cursor:not-allowed;}
+.map-btn.measure-active{background:rgba(255,221,68,.1);color:#ffdd44;border-color:rgba(255,221,68,.4);}
+#measure-badge{display:none;top:60px;right:18px;padding:7px 14px;color:#ffdd44;border-color:rgba(255,221,68,.3);}
 
-/* Marker */
-.mkr{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid rgba(255,255,255,.15);}
-.mkr.a{background:var(--accent);box-shadow:0 0 8px var(--accent);}
-.mkr.b{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+/* PANEL */
+#panel{background:var(--surface);border-left:1px solid var(--border);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;height:100%;}
 
-/* ── RIGHT PANEL ── */
-#panel{
-  background:var(--surface);border-left:1px solid var(--border);
-  display:grid;
-  grid-template-rows:1fr auto auto;
-  overflow:hidden;
-  height:100%;
-}
+/* FLÄCHEN LIST */
+#areas-header{padding:10px 16px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#areas-title{font-family:var(--font);font-size:.82rem;font-weight:600;color:var(--text);}
+#btn-new-area{background:var(--accent);color:#000;border:none;border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:.7rem;font-weight:500;cursor:pointer;}
+#btn-new-area:hover{background:#00fdb5;}
+#btn-new-area.active{background:rgba(255,85,51,.2);color:#ff8060;border:1px solid rgba(255,85,51,.5);}
 
-/* Panel sections */
-.p-section{border-bottom:1px solid var(--border);}
+#areas-list{border-bottom:1px solid var(--border);flex-shrink:0;max-height:160px;overflow-y:auto;}
+.area-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(35,47,66,.5);}
+.area-item:last-child{border-bottom:none;}
+.area-item:hover{background:var(--panel);}
+.area-item.active{background:var(--panel2);}
+.area-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.area-info{flex:1;min-width:0;}
+.area-name{font-size:.76rem;font-weight:500;color:var(--text);}
+.area-sub{font-size:.65rem;color:var(--muted);margin-top:1px;}
+.area-actions{display:flex;gap:4px;}
+.area-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.75rem;padding:2px 5px;border-radius:3px;transition:all .15s;}
+.area-btn:hover{color:var(--text);background:var(--panel);}
+.area-btn.danger:hover{color:var(--warn);}
+.area-empty{padding:14px 16px;font-size:.72rem;color:var(--muted);text-align:center;}
 
-/* Accordeon header */
-.acc-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 16px;cursor:pointer;user-select:none;
-  transition:background .15s;
-}
-.acc-header:hover{background:var(--panel);}
-.acc-title{font-family:var(--font);font-size:.82rem;font-weight:600;color:var(--text);}
-.acc-arrow{font-size:.7rem;color:var(--muted);transition:transform .25s;}
-.acc-arrow.open{transform:rotate(180deg);}
-.acc-body{overflow:hidden;transition:max-height .3s ease;max-height:0;}
-.acc-body.open{max-height:800px;}
-.acc-inner{padding:0 16px 14px;}
-
-/* Form fields */
-.field{margin-bottom:10px;}
-.field-label{font-size:.62rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px;}
-select.fsel{
-  width:100%;background:var(--panel);border:1px solid var(--border);
-  border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.76rem;
-  padding:7px 10px;outline:none;cursor:pointer;
-  appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235a7090' d='M5 7L1 3h8z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
-  transition:border-color .2s;
-}
-select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
-
-/* Schnitt preview */
-#schnitt-wrap{padding:10px 16px 14px;}
-#schnitt-label{font-size:.62rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:6px;}
-#schnitt-svg{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:4px;}
-#schnitt-vals{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;}
-.sv{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 8px;}
-.sv-label{font-size:.58rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
-.sv-val{font-size:.8rem;color:var(--accent);font-family:var(--font);font-weight:600;}
-
-/* Panel action buttons */
-#panel-actions{padding:14px 16px;display:flex;flex-direction:column;gap:7px;}
-
-/* Scrollable area = accordion + actions */
+/* SCROLLABLE CONFIG */
 #panel-scroll{overflow-y:auto;flex:1;}
+.p-section{border-bottom:1px solid var(--border);}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;transition:background .15s;}
+.acc-header:hover{background:var(--panel);}
+.acc-title{font-family:var(--font);font-size:.8rem;font-weight:600;color:var(--text);}
+.acc-arrow{font-size:.65rem;color:var(--muted);transition:transform .25s;}
+.acc-arrow.open{transform:rotate(180deg);}
+.acc-body{overflow:hidden;max-height:0;transition:max-height .3s ease;}
+.acc-body.open{max-height:900px;}
+.acc-inner{padding:0 16px 12px;}
+.field{margin-bottom:9px;}
+.field-label{font-size:.6rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:3px;}
+select.fsel{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:.75rem;padding:6px 28px 6px 9px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%235a7090' d='M5 7L1 3h8z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;transition:border-color .2s;}
+select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
+#schnitt-wrap{padding:8px 16px 12px;}
+#schnitt-label{font-size:.6rem;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:5px;}
+#schnitt-svg{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:4px;}
+#schnitt-vals{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;}
+.sv{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:5px 8px;}
+.sv-label{font-size:.57rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.sv-val{font-size:.78rem;color:var(--accent);font-family:var(--font);font-weight:600;}
 
-/* Fixed bottom bar */
-#panel-bottom{
-  border-top:1px solid var(--border);
-  padding:12px 16px;
-  display:flex;flex-direction:column;gap:7px;
-  background:var(--surface);
-  flex-shrink:0;
-}
-.p-btn{
-  width:100%;padding:9px;border-radius:var(--radius);font-family:var(--mono);
-  font-size:.74rem;font-weight:500;cursor:pointer;border:1px solid var(--border);
-  transition:all .2s;letter-spacing:.03em;text-align:center;
-  background:var(--panel);color:var(--muted);
-}
+/* FIXED BOTTOM */
+#panel-bottom{border-top:1px solid var(--border);padding:10px 14px;display:flex;flex-direction:column;gap:6px;background:var(--surface);flex-shrink:0;}
+.p-btn{width:100%;padding:8px;border-radius:var(--radius);font-family:var(--mono);font-size:.72rem;font-weight:500;cursor:pointer;border:1px solid var(--border);transition:all .2s;text-align:center;background:var(--panel);color:var(--muted);}
 .p-btn:hover{color:var(--text);border-color:var(--muted);}
 .p-btn.green{background:var(--accent);color:#000;border-color:var(--accent);}
 .p-btn.green:hover{background:#00fdb5;}
@@ -156,48 +103,11 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 .p-btn.red{color:var(--warn);border-color:rgba(255,85,51,.3);}
 .p-btn.red:hover{background:rgba(255,85,51,.1);border-color:var(--warn);}
 .p-btn:disabled{opacity:.3;cursor:not-allowed;}
-.p-btn.active{background:rgba(255,100,60,.1);color:#ff8060;border-color:rgba(255,85,51,.5);}
+.p-divider{height:1px;background:var(--border);margin:2px 0;}
 
-.p-divider{height:1px;background:var(--border);margin:4px 0;}
-
-/* ── EXPORT MODAL ── */
-#export-overlay{
-  display:none;position:fixed;inset:0;z-index:3000;
-  background:rgba(5,8,12,.85);backdrop-filter:blur(5px);
-  align-items:center;justify-content:center;
-}
-#export-overlay.open{display:flex;}
-#export-modal{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:10px;width:min(92vw,420px);overflow:hidden;
-  animation:modalIn .2s ease;
-}
-#export-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;height:48px;border-bottom:1px solid var(--border);
-}
-#export-header h2{font-family:var(--font);font-size:.9rem;font-weight:600;}
-#export-close{background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:4px 8px;border-radius:4px;font-family:var(--mono);}
-#export-close:hover{color:var(--text);}
-#export-body{padding:20px;}
-#export-body p{font-size:.76rem;color:var(--muted);margin-bottom:16px;line-height:1.6;}
-.export-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.export-opt{
-  border:1px solid var(--border);border-radius:6px;padding:16px 12px;
-  cursor:pointer;transition:all .2s;text-align:center;background:var(--panel);
-}
-.export-opt:hover{border-color:var(--accent2);background:rgba(0,128,255,.08);}
-.export-opt-icon{font-size:1.8rem;margin-bottom:8px;}
-.export-opt-title{font-family:var(--font);font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:4px;}
-.export-opt-desc{font-size:.68rem;color:var(--muted);line-height:1.5;}
-
-/* Stats */
-#field-stats{
-  padding:8px 16px;border-top:1px solid var(--border);
-  font-size:.7rem;color:var(--muted);line-height:1.8;display:none;
-  flex-shrink:0;background:var(--surface);
-}
-#field-stats.show{display:block;}
+/* STATS */
+#area-stats{padding:7px 16px;font-size:.68rem;color:var(--muted);line-height:1.8;border-bottom:1px solid var(--border);display:none;}
+#area-stats.show{display:block;}
 .stat-line span{color:var(--text);}
 
 /* Leaflet */
@@ -205,241 +115,146 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 .leaflet-control-zoom a{background:rgba(10,13,18,.9)!important;color:var(--text)!important;border-color:var(--border)!important;}
 .leaflet-control-zoom a:hover{color:var(--accent)!important;}
 .leaflet-bar{box-shadow:none!important;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div class="logo">GELÄNDE<span>SCHNITT</span></div>
-    <div class="header-status">
-      <span><span class="dot" id="dot-a"></span><span id="lbl-a">Punkt A: —</span></span>
-      <span><span class="dot" id="dot-b"></span><span id="lbl-b">Punkt B: —</span></span>
+    <div class="hdr-right">
+      <span id="hdr-status" style="color:var(--muted);">Bereit</span>
     </div>
   </header>
-
   <div id="main">
     <!-- MAP -->
     <div id="map-wrap">
       <div id="map"></div>
-      <div class="map-overlay" id="instruction">Klick → Punkt A setzen</div>
+      <div class="map-overlay" id="instruction">PLZ eingeben oder Fläche einzeichnen</div>
       <div class="map-overlay" id="search-box">
         <input type="text" id="plz-input" placeholder="PLZ oder Ort eingeben…" maxlength="40"/>
         <button id="search-btn">→</button>
       </div>
-      <div class="map-overlay" id="area-badge">⬡ <span id="area-m2">—</span></div>
-      <div class="map-overlay" id="measure-badge" style="display:none;top:60px;right:18px;padding:7px 14px;color:#ffdd44;border-color:rgba(255,221,68,.3);">📏 <span id="measure-val">—</span></div>
+      <div class="map-overlay" id="measure-badge">📏 <span id="measure-val">—</span></div>
       <div id="map-btns">
         <button class="map-btn" id="btn-measure">📏 Messen</button>
-        <button class="map-btn" id="btn-reset">↺ Zurücksetzen</button>
-        <button class="map-btn primary" id="btn-profile" disabled>Gelände ausgeben</button>
       </div>
     </div>
 
     <!-- RIGHT PANEL -->
     <div id="panel">
 
-      <!-- SCROLLABLE AREA starts with accordion -->
+      <!-- FLÄCHEN HEADER -->
+      <div id="areas-header">
+        <div id="areas-title">Flächen</div>
+        <button id="btn-new-area">+ Neue Fläche</button>
+      </div>
+
+      <!-- FLÄCHEN LIST -->
+      <div id="areas-list">
+        <div class="area-empty" id="areas-empty">Noch keine Fläche eingezeichnet</div>
+      </div>
+
+      <!-- SCROLLABLE CONFIG -->
       <div id="panel-scroll">
-      <!-- ACCORDION: Unterkonstruktion -->
-      <div class="p-section">
-        <div class="acc-header" id="acc-uk-hdr">
-          <div class="acc-title">Unterkonstruktion</div>
-          <div class="acc-arrow" id="acc-uk-arrow">▼</div>
-        </div>
-        <div class="acc-body" id="acc-uk-body">
-          <div class="acc-inner">
-            <div class="field">
-              <div class="field-label">Modulabmaß</div>
-              <select class="fsel" id="uk-modul" onchange="ukChange()">
-                <option value="1134">1134 mm × 2382 mm</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Modulanordnung</div>
-              <select class="fsel" id="uk-anord" onchange="ukChange()">
-                <option value="4">4-Landscape</option>
-                <option value="5">5-Landscape</option>
-                <option value="6" selected>6-Landscape</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Modulabstand vertikal</div>
-              <select class="fsel" id="uk-vspalt" onchange="ukChange()">
-                <option value="20" selected>20 mm</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Modulabstand horizontal</div>
-              <select class="fsel" id="uk-hspalt" onchange="ukChange()">
-                <option value="20" selected>20 mm</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Anstellwinkel</div>
-              <select class="fsel" id="uk-winkel" onchange="ukChange()">
-                <option value="14">14°</option>
-                <option value="18" selected>18°</option>
-                <option value="20">20°</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Abstand Modulunterkante</div>
-              <select class="fsel" id="uk-uk" onchange="ukChange()">
-                <option value="500">0,5 m</option>
-                <option value="800" selected>0,8 m</option>
-                <option value="1000">1,0 m</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Reihenabstand</div>
-              <select class="fsel" id="uk-reihe" onchange="ukChange()">
-                <option value="2">2,0 m</option>
-                <option value="2.5" selected>2,5 m</option>
-                <option value="3">3,0 m</option>
-              </select>
-            </div>
-            <div class="field">
-              <div class="field-label">Randabstand</div>
-              <select class="fsel" id="uk-rand" onchange="ukChange()">
-                <option value="3">3 m</option>
-                <option value="4" selected>4 m</option>
-                <option value="5">5 m</option>
-              </select>
-            </div>
+        <!-- UK ACCORDION -->
+        <div class="p-section">
+          <div class="acc-header" id="acc-uk-hdr">
+            <div class="acc-title">Unterkonstruktion</div>
+            <div class="acc-arrow open" id="acc-uk-arrow">▼</div>
           </div>
-          <!-- Schnitt Vorschau -->
-          <div id="schnitt-wrap">
-            <div id="schnitt-label">Tischschnitt Vorschau</div>
-            <svg id="schnitt-svg" viewBox="0 0 260 130" height="110"></svg>
-            <div id="schnitt-vals">
-              <div class="sv"><div class="sv-label">Sehnenlänge</div><div class="sv-val" id="sv-sehne">—</div></div>
-              <div class="sv"><div class="sv-label">Tiefe (proj.)</div><div class="sv-val" id="sv-tiefe">—</div></div>
-              <div class="sv"><div class="sv-label">Winkel</div><div class="sv-val" id="sv-winkel">—</div></div>
-              <div class="sv"><div class="sv-label">UK vorne</div><div class="sv-val" id="sv-uk">—</div></div>
+          <div class="acc-body open" id="acc-uk-body">
+            <div class="acc-inner">
+              <div class="field"><div class="field-label">Modulabmaß</div>
+                <select class="fsel" id="uk-modul" onchange="ukChange()"><option value="1134">1134 mm × 2382 mm</option></select></div>
+              <div class="field"><div class="field-label">Modulanordnung</div>
+                <select class="fsel" id="uk-anord" onchange="ukChange()">
+                  <option value="4">4-Landscape</option><option value="5">5-Landscape</option><option value="6" selected>6-Landscape</option>
+                </select></div>
+              <div class="field"><div class="field-label">Modulabstand vertikal</div>
+                <select class="fsel" id="uk-vspalt" onchange="ukChange()"><option value="20" selected>20 mm</option></select></div>
+              <div class="field"><div class="field-label">Modulabstand horizontal</div>
+                <select class="fsel" id="uk-hspalt" onchange="ukChange()"><option value="20" selected>20 mm</option></select></div>
+              <div class="field"><div class="field-label">Anstellwinkel</div>
+                <select class="fsel" id="uk-winkel" onchange="ukChange()">
+                  <option value="14">14°</option><option value="18" selected>18°</option><option value="20">20°</option>
+                </select></div>
+              <div class="field"><div class="field-label">Abstand Modulunterkante</div>
+                <select class="fsel" id="uk-uk" onchange="ukChange()">
+                  <option value="500">0,5 m</option><option value="800" selected>0,8 m</option><option value="1000">1,0 m</option>
+                </select></div>
+              <div class="field"><div class="field-label">Reihenabstand</div>
+                <select class="fsel" id="uk-reihe" onchange="ukChange()">
+                  <option value="2">2,0 m</option><option value="2.5" selected>2,5 m</option><option value="3">3,0 m</option>
+                </select></div>
+              <div class="field"><div class="field-label">Randabstand</div>
+                <select class="fsel" id="uk-rand" onchange="ukChange()">
+                  <option value="3">3 m</option><option value="4" selected>4 m</option><option value="5">5 m</option>
+                </select></div>
+            </div>
+            <div id="schnitt-wrap">
+              <div id="schnitt-label">Tischschnitt Vorschau</div>
+              <svg id="schnitt-svg" viewBox="0 0 260 120" height="100"></svg>
+              <div id="schnitt-vals">
+                <div class="sv"><div class="sv-label">Sehnenlänge</div><div class="sv-val" id="sv-sehne">—</div></div>
+                <div class="sv"><div class="sv-label">Tiefe (proj.)</div><div class="sv-val" id="sv-tiefe">—</div></div>
+                <div class="sv"><div class="sv-label">Winkel</div><div class="sv-val" id="sv-winkel">—</div></div>
+                <div class="sv"><div class="sv-label">UK vorne</div><div class="sv-val" id="sv-uk">—</div></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- SCROLLABLE AREA -->
-      <div id="panel-scroll">
-        <div id="panel-actions">
-          <button class="p-btn" id="btn-gelände" disabled style="opacity:.3;">Gelände ausgeben</button>
+        <!-- STATS aktive Fläche -->
+        <div id="area-stats">
+          <div class="stat-line">Fläche: <span id="st-area">—</span></div>
+          <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
+          <div class="stat-line">Module: <span id="st-mods">—</span></div>
         </div>
-      </div>
-
-      </div><!-- end panel-scroll -->
-
-      <!-- STATS -->
-      <div id="field-stats">
-        <div class="stat-line">Fläche: <span id="st-area">—</span></div>
-        <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
-        <div class="stat-line">Module: <span id="st-mods">—</span></div>
       </div>
 
       <!-- FIXED BOTTOM BUTTONS -->
       <div id="panel-bottom">
-        <button class="p-btn" id="btn-draw-area">⬡ Fläche einzeichnen</button>
-        <div class="p-divider"></div>
         <button class="p-btn green" id="btn-belegen" disabled>⚡ Feld belegen</button>
         <button class="p-btn blue" id="btn-update" disabled>↺ Update Belegung</button>
-        <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
         <div class="p-divider"></div>
+        <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
         <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- DEBUG BOX -->
-<div id="debug-box" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:3000;background:rgba(10,13,18,.95);border:1px solid #ff9900;border-radius:6px;padding:10px 16px;font-family:DM Mono,monospace;font-size:11px;color:#ff9900;line-height:1.8;pointer-events:none;"></div>
-
-<!-- MODALS -->
-<!-- Terrain modal -->
-<div id="modal-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(5,8,12,.82);backdrop-filter:blur(5px);align-items:center;justify-content:center;">
-  <div id="modal" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;width:min(94vw,1100px);height:min(88vh,700px);display:grid;grid-template-rows:52px 1fr 60px;overflow:hidden;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);">
-      <div style="font-family:var(--font);font-size:.95rem;font-weight:600;" id="modal-title">Geländeprofil</div>
-      <button onclick="closeModal()" style="background:none;border:1px solid transparent;color:var(--muted);font-size:1rem;cursor:pointer;padding:5px 10px;border-radius:4px;font-family:var(--mono);">✕ Schließen</button>
-    </div>
-    <div style="padding:20px 28px 12px;position:relative;min-height:0;"><canvas id="modal-chart" style="width:100%!important;height:100%!important;"></canvas></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr) auto;border-top:1px solid var(--border);">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
-        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Distanz</div>
-        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--accent);" id="modal-dist">—</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
-        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Δ Höhe</div>
-        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--accent2);" id="modal-delta">—</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;border-right:1px solid var(--border);">
-        <div style="font-size:.6rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);">Max. Höhe</div>
-        <div style="font-family:var(--font);font-size:1.1rem;font-weight:800;color:var(--warn);" id="modal-max">—</div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:center;padding:8px 16px;">
-        <button id="btn-uk-modal" onclick="closeModal()" style="padding:7px 18px;background:var(--accent2);color:#fff;border:none;border-radius:4px;font-family:var(--mono);font-size:.74rem;cursor:pointer;">⚡ UK belegen</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- EXPORT MODAL -->
-<div id="export-overlay">
-  <div id="export-modal">
-    <div id="export-header">
-      <h2>KMZ / KML exportieren</h2>
-      <button id="export-close">✕</button>
-    </div>
-    <div id="export-body">
-      <p>Wähle das Ausgabeformat. Die Datei kann direkt in Google Earth geöffnet werden.</p>
-      <div class="export-options">
-        <div class="export-opt" id="export-2d">
-          <div class="export-opt-icon">🗺️</div>
-          <div class="export-opt-title">2D</div>
-          <div class="export-opt-desc">Fläche und Tischreihen flach auf dem Boden — ideal für Übersichten</div>
-        </div>
-        <div class="export-opt" id="export-3d">
-          <div class="export-opt-icon">🏗️</div>
-          <div class="export-opt-title">3D</div>
-          <div class="export-opt-desc">Tische mit Anstellwinkel und Höhe — realistisches 3D-Modell in Google Earth</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Loading -->
+<!-- LOADING -->
 <div id="loading" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(5,8,12,.7);backdrop-filter:blur(3px);align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:var(--mono);font-size:.8rem;color:var(--muted);">
   <div style="width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;"></div>
-  <span>Höhendaten werden geladen…</span>
+  <span>Wird berechnet…</span>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
 
 <script>
 const MOD_B=2.382,MOD_H=1.134,MOD_MIN=6;
 
+// Flächen-Farben
+const AREA_COLORS=['#ff4444','#ff9900','#ffdd00','#00cc66','#0099ff','#cc44ff','#ff44aa'];
+
 // ── MAP ──────────────────────────────────────────────────────────────────
-const map=L.map('map',{zoomControl:true}).setView([47.5,10.5],9);
+const map=L.map('map',{zoomControl:true}).setView([52.5,10.0],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(map);
 
-// ── STATE ─────────────────────────────────────────────────────────────────
-let pointA=null,pointB=null,markerA=null,markerB=null,polyline=null,terrainChart=null,phase='A';
-let areaMode=false,areaPoints=[],areaMarkers=[],areaPolyline=null,areaPolygon=null;
-let fieldRows=[],fieldLayers=[];
-let dirtyField=false;
+// ── FLÄCHEN STATE ─────────────────────────────────────────────────────────
+let areas=[]; // Array von Area-Objekten
+let activeAreaId=null;
+let drawingMode=false;
+let drawPoints=[],drawMarkers=[],drawPolyline=null;
 
-// ── ACCORDION ─────────────────────────────────────────────────────────────
-const accHdr=document.getElementById('acc-uk-hdr');
-const accBody=document.getElementById('acc-uk-body');
-const accArrow=document.getElementById('acc-uk-arrow');
-accHdr.addEventListener('click',()=>{
-  const open=accBody.classList.toggle('open');
-  accArrow.classList.toggle('open',open);
-  if(open) drawSchnitt();
-});
-// Open by default
-accBody.classList.add('open');
-accArrow.classList.add('open');
+// Area Objekt:
+// { id, name, color, points[], polygon(Leaflet), innerLine(Leaflet),
+//   uk:{...}, fieldLayers[], rows[], confirmed }
+
+function getAreaColor(idx){ return AREA_COLORS[idx%AREA_COLORS.length]; }
+
+function getActiveArea(){ return areas.find(a=>a.id===activeAreaId)||null; }
 
 // ── UK CONFIG ─────────────────────────────────────────────────────────────
 function getUK(){
@@ -455,11 +270,26 @@ function getUK(){
   };
 }
 
+function setUKFromArea(area){
+  if(!area||!area.uk) return;
+  const u=area.uk;
+  document.getElementById('uk-anord').value=u.n;
+  document.getElementById('uk-vspalt').value=u.vspalt*1000;
+  document.getElementById('uk-hspalt').value=u.hspalt*1000;
+  document.getElementById('uk-winkel').value=u.winkel;
+  document.getElementById('uk-uk').value=u.uk*1000;
+  document.getElementById('uk-reihe').value=u.reihe;
+  document.getElementById('uk-rand').value=u.rand;
+  drawSchnitt();
+}
+
 function ukChange(){
   drawSchnitt();
-  if(fieldRows.length>0){
-    dirtyField=true;
-    document.getElementById('btn-update').disabled=false;
+  const a=getActiveArea();
+  if(a){
+    a.uk=getUK();
+    document.getElementById('btn-update').disabled=a.fieldLayers.length===0;
+    if(a.fieldLayers.length>0) document.getElementById('btn-update').disabled=false;
   }
 }
 
@@ -468,7 +298,7 @@ function drawSchnitt(){
   const{n,vspalt,winkel,uk}=getUK();
   const SEHNE=n*MOD_H+(n-1)*vspalt;
   const RAD=winkel*Math.PI/180;
-  const GY=105,OX=20,sc=210/SEHNE,p=m=>m*sc;
+  const GY=100,OX=18,sc=210/SEHNE,p=m=>m*sc;
   const anh=p(uk);
   const x1=OX,y1=GY-anh,x2=x1+p(SEHNE)*Math.cos(RAD),y2=y1-p(SEHNE)*Math.sin(RAD);
   const pVx=x1+(x2-x1)*.15,pVy=y1+(y2-y1)*.15;
@@ -479,13 +309,8 @@ function drawSchnitt(){
   s+=`<line x1="${pVx}" y1="${pVy}" x2="${pVx}" y2="${GY}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
   s+=`<line x1="${pHx}" y1="${pHy}" x2="${pHx}" y2="${GY}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
   s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`;
-  if(winkel>0){
-    const wR=18;
-    s+=`<line x1="${pVx}" y1="${pVy}" x2="${pVx+wR+12}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5"/>`;
-    s+=`<path d="M ${pVx+wR} ${pVy} A ${wR} ${wR} 0 0 1 ${pVx+wR*Math.cos(RAD)} ${pVy+wR*Math.sin(RAD)}" fill="none" stroke="#2d3e56" stroke-width=".5"/>`;
-    s+=`<text x="${pVx+wR+5}" y="${pVy+13}" font-size="9" fill="#5a7090" font-family="DM Mono,monospace">${winkel}°</text>`;
-  }
-  const bx=pVx-14;
+  if(winkel>0){const wR=16;s+=`<line x1="${pVx}" y1="${pVy}" x2="${pVx+wR+10}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5"/>`;s+=`<path d="M ${pVx+wR} ${pVy} A ${wR} ${wR} 0 0 1 ${pVx+wR*Math.cos(RAD)} ${pVy+wR*Math.sin(RAD)}" fill="none" stroke="#2d3e56" stroke-width=".5"/>`;s+=`<text x="${pVx+wR+4}" y="${pVy+12}" font-size="9" fill="#5a7090" font-family="DM Mono,monospace">${winkel}°</text>`;}
+  const bx=pVx-12;
   s+=`<line x1="${bx}" y1="${GY}" x2="${bx}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5"/>`;
   s+=`<line x1="${bx}" y1="${GY}" x2="${pVx}" y2="${GY}" stroke="#2d3e56" stroke-width=".5" stroke-dasharray="2 2"/>`;
   s+=`<line x1="${bx}" y1="${pVy}" x2="${pVx}" y2="${pVy}" stroke="#2d3e56" stroke-width=".5" stroke-dasharray="2 2"/>`;
@@ -497,141 +322,97 @@ function drawSchnitt(){
   document.getElementById('sv-uk').textContent=`${uk.toFixed(2)} m`;
 }
 
-// ── SEARCH ────────────────────────────────────────────────────────────────
-async function searchLocation(q){
-  const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&limit=1&format=json`;
-  const res=await fetch(url,{headers:{'Accept-Language':'de'}});
-  const data=await res.json();
-  if(!data.length){alert('Ort nicht gefunden.');return;}
-  map.setView([parseFloat(data[0].lat),parseFloat(data[0].lon)],14,{animate:true});
-}
-document.getElementById('search-btn').addEventListener('click',()=>{const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);});
-document.getElementById('plz-input').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);}});
-
-// ── TERRAIN POINTS ────────────────────────────────────────────────────────
-function makeIcon(cls){return L.divIcon({className:'',html:`<div class="mkr ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,18]});}
-function fmt(ll){return`${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;}
-function haversine(a,b){const R=6371000,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;const s=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;return R*2*Math.atan2(Math.sqrt(s),Math.sqrt(1-s));}
-function lerp(a,b,t){return{lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t};}
-function fmtDist(m){return m>=1000?`${(m/1000).toFixed(2)} km`:`${Math.round(m)} m`;}
-
-map.on('click',e=>{
-  if(measureMode){
-    measurePoints.push(e.latlng);
-    updateMeasure();
-    return;
-  }
-  if(areaMode){
-    areaPoints.push(e.latlng);
-    const m=L.circleMarker(e.latlng,{radius:4,color:'#ff4444',fillColor:'#ff4444',fillOpacity:1,weight:1}).addTo(map);
-    areaMarkers.push(m);
-    updateAreaPreview();
-    return;
-  }
-  if(phase==='done')return;
-  if(phase==='A'){
-    pointA=e.latlng;
-    if(markerA)map.removeLayer(markerA);
-    markerA=L.marker(pointA,{icon:makeIcon('a')}).addTo(map);
-    document.getElementById('dot-a').classList.add('on');
-    document.getElementById('lbl-a').textContent=`A: ${fmt(pointA)}`;
-    document.getElementById('instruction').textContent='Klick → Punkt B setzen';
-    phase='B';
-  } else if(phase==='B'){
-    pointB=e.latlng;
-    if(markerB)map.removeLayer(markerB);
-    markerB=L.marker(pointB,{icon:makeIcon('b')}).addTo(map);
-    document.getElementById('dot-b').classList.add('on');
-    document.getElementById('lbl-b').textContent=`B: ${fmt(pointB)}`;
-    if(polyline)map.removeLayer(polyline);
-    polyline=L.polyline([pointA,pointB],{color:'#00e5a0',weight:2,dashArray:'6 4',opacity:.9}).addTo(map);
-    map.fitBounds(L.latLngBounds([pointA,pointB]),{padding:[80,80]});
-    document.getElementById('instruction').classList.add('hidden');
-    document.getElementById('btn-profile').disabled=false;
-    phase='done';
-  }
+// ── ACCORDION ─────────────────────────────────────────────────────────────
+document.getElementById('acc-uk-hdr').addEventListener('click',()=>{
+  const open=document.getElementById('acc-uk-body').classList.toggle('open');
+  document.getElementById('acc-uk-arrow').classList.toggle('open',open);
 });
 
-// ── ELEVATION ─────────────────────────────────────────────────────────────
-async function fetchOpenMeteo(points){
-  const lats=points.map(p=>p.lat.toFixed(6)).join(',');
-  const lngs=points.map(p=>p.lng.toFixed(6)).join(',');
-  const res=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
-  if(!res.ok)throw new Error(`Open-Meteo ${res.status}`);
-  const data=await res.json();
-  if(!data.elevation)throw new Error('Kein elevation-Feld');
-  return data.elevation;
-}
-function chunkArr(arr,n){const out=[];for(let i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;}
-async function fetchElevation(points){
-  const chunks=chunkArr(points,100);
-  const r=await Promise.all(chunks.map(fetchOpenMeteo));
-  return r.flat();
-}
-function gaussSmooth(data,radius){
-  return data.map((_,i)=>{
-    let sum=0,weight=0;
-    for(let j=-radius;j<=radius;j++){const idx=Math.min(Math.max(i+j,0),data.length-1);const w=Math.exp(-(j*j)/(2*radius*radius/4));sum+=data[idx]*w;weight+=w;}
-    return sum/weight;
+// ── AREA LIST RENDER ──────────────────────────────────────────────────────
+function renderAreaList(){
+  const list=document.getElementById('areas-list');
+  const empty=document.getElementById('areas-empty');
+  if(areas.length===0){
+    list.innerHTML='';
+    list.appendChild(empty);
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML='';
+  areas.forEach(a=>{
+    const m2=areaM2(a.points);
+    const m2txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
+    const mods=a.rows.reduce((s,r)=>s+r.nMod*a.uk.n,0);
+    const sub=a.rows.length>0?`${a.rows.length} Reihen · ${mods} Module · ${m2txt}`:m2txt;
+    const div=document.createElement('div');
+    div.className='area-item'+(a.id===activeAreaId?' active':'');
+    div.innerHTML=`
+      <div class="area-color" style="background:${a.color}"></div>
+      <div class="area-info">
+        <div class="area-name">${a.name}</div>
+        <div class="area-sub">${sub}</div>
+      </div>
+      <div class="area-actions">
+        <button class="area-btn" title="Belegen" onclick="setActiveArea('${a.id}');belegen();">⚡</button>
+        <button class="area-btn danger" title="Löschen" onclick="deleteArea('${a.id}')">✕</button>
+      </div>`;
+    div.addEventListener('click',e=>{
+      if(e.target.closest('.area-btn'))return;
+      setActiveArea(a.id);
+    });
+    list.appendChild(div);
   });
 }
 
-// ── PROFILE ───────────────────────────────────────────────────────────────
-document.getElementById('btn-profile').addEventListener('click',async()=>{
-  document.getElementById('loading').style.display='flex';
-  const dist=haversine(pointA,pointB);
-  const pts=Array.from({length:100},(_, i)=>lerp(pointA,pointB,i/99));
-  const distances=pts.map((_,i)=>((i/99)*dist/1000).toFixed(4));
-  try{
-    const raw=await fetchElevation(pts);
-    const elevations=gaussSmooth(raw,8);
-    const maxEl=Math.max(...elevations),minEl=Math.min(...elevations);
-    const elA=elevations[0],elB=elevations[elevations.length-1];
-    const chartH=document.getElementById('modal-chart').offsetHeight||480;
-    const chartW=document.getElementById('modal-chart').offsetWidth||1000;
-    const trueSpan=dist*(chartH/chartW);
-    const actualRange=maxEl-minEl;
-    const displayRange=Math.max(actualRange,trueSpan);
-    const pad=Math.max(2,displayRange*.25);
-    const midEl=(maxEl+minEl)/2;
-    document.getElementById('modal-dist').textContent=fmtDist(dist);
-    document.getElementById('modal-delta').textContent=`${elB-elA>=0?'+':''}${Math.round(elB-elA)} m`;
-    document.getElementById('modal-max').textContent=`${Math.round(maxEl)} m`;
-    document.getElementById('modal-title').textContent=`Geländeprofil · ${fmtDist(dist)}`;
-    document.getElementById('loading').style.display='none';
-    document.getElementById('modal-overlay').style.display='flex';
-    if(terrainChart)terrainChart.destroy();
-    const ctx=document.getElementById('modal-chart').getContext('2d');
-    const grad=ctx.createLinearGradient(0,0,0,480);
-    grad.addColorStop(0,'rgba(0,229,160,.28)');grad.addColorStop(1,'rgba(0,229,160,.01)');
-    terrainChart=new Chart(ctx,{type:'line',data:{labels:distances,datasets:[{data:elevations,borderColor:'#00e5a0',borderWidth:2,backgroundColor:grad,fill:true,pointRadius:0,tension:.5,cubicInterpolationMode:'monotone'}]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:700},interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#13181f',borderColor:'#232f42',borderWidth:1,titleColor:'#5a7090',bodyColor:'#dde6f0',callbacks:{title:i=>`${parseFloat(i[0].label).toFixed(3)} km`,label:i=>`  ${Math.round(i.raw)} m ü. NN`}}},scales:{x:{ticks:{color:'#5a7090',font:{family:'DM Mono',size:11},maxTicksLimit:10,callback:(_,i)=>distances[i]?`${parseFloat(distances[i]).toFixed(2)}km`:''},grid:{color:'#161d28'},border:{color:'#232f42'}},y:{ticks:{color:'#5a7090',font:{family:'DM Mono',size:11},callback:v=>`${Math.round(v)}m`},grid:{color:'#161d28'},border:{color:'#232f42'},min:Math.max(0,midEl-displayRange/2-pad),max:midEl+displayRange/2+pad}}}});
-  }catch(err){
-    document.getElementById('loading').style.display='none';
-    alert('Fehler beim Laden der Höhendaten.');
+function setActiveArea(id){
+  activeAreaId=id;
+  const a=getActiveArea();
+  if(a){
+    setUKFromArea(a);
+    updateStats(a);
+    document.getElementById('btn-belegen').disabled=false;
+    document.getElementById('btn-clear').disabled=a.fieldLayers.length===0;
+    document.getElementById('btn-update').disabled=a.fieldLayers.length===0;
+    document.getElementById('btn-export').disabled=areas.length===0;
   }
-});
-function closeModal(){document.getElementById('modal-overlay').style.display='none';}
+  renderAreaList();
+}
 
-// ── RESET ─────────────────────────────────────────────────────────────────
-document.getElementById('btn-reset').addEventListener('click',()=>{
-  if(markerA){map.removeLayer(markerA);markerA=null;}
-  if(markerB){map.removeLayer(markerB);markerB=null;}
-  if(polyline){map.removeLayer(polyline);polyline=null;}
-  if(terrainChart){terrainChart.destroy();terrainChart=null;}
-  pointA=pointB=null;phase='A';
-  document.getElementById('dot-a').classList.remove('on');
-  document.getElementById('dot-b').classList.remove('on');
-  document.getElementById('lbl-a').textContent='Punkt A: —';
-  document.getElementById('lbl-b').textContent='Punkt B: —';
-  document.getElementById('btn-profile').disabled=true;
-  document.getElementById('instruction').textContent='Klick → Punkt A setzen';
-  document.getElementById('instruction').classList.remove('hidden');
-  closeModal();
-  resetArea();
-});
+function deleteArea(id){
+  const a=areas.find(x=>x.id===id);
+  if(!a)return;
+  if(a.polygon)map.removeLayer(a.polygon);
+  if(a.innerLine)map.removeLayer(a.innerLine);
+  a.fieldLayers.forEach(l=>map.removeLayer(l));
+  areas=areas.filter(x=>x.id!==id);
+  if(activeAreaId===id){
+    activeAreaId=areas.length>0?areas[areas.length-1].id:null;
+    if(activeAreaId)setActiveArea(activeAreaId);
+    else{
+      document.getElementById('btn-belegen').disabled=true;
+      document.getElementById('btn-clear').disabled=true;
+      document.getElementById('btn-update').disabled=true;
+      document.getElementById('area-stats').classList.remove('show');
+    }
+  }
+  renderAreaList();
+}
 
-// ── AREA ──────────────────────────────────────────────────────────────────
+function updateStats(a){
+  if(!a){document.getElementById('area-stats').classList.remove('show');return;}
+  const m2=areaM2(a.points);
+  const m2txt=m2>=10000?`${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`:`${Math.round(m2).toLocaleString('de')} m²`;
+  document.getElementById('st-area').textContent=m2txt;
+  document.getElementById('st-rows').textContent=a.rows.length||'—';
+  const mods=a.rows.reduce((s,r)=>s+r.nMod*a.uk.n,0);
+  document.getElementById('st-mods').textContent=mods||'—';
+  document.getElementById('area-stats').classList.add('show');
+}
+
+// ── DRAWING ────────────────────────────────────────────────────────────────
 function areaM2(pts){
+  if(pts.length<3)return 0;
   let area=0;const R=6371000,latM=Math.PI/180*R;
   for(let i=0;i<pts.length;i++){
     const j=(i+1)%pts.length;
@@ -641,84 +422,83 @@ function areaM2(pts){
   }
   return Math.abs(area/2);
 }
-function updateAreaPreview(){
-  if(areaPolyline)map.removeLayer(areaPolyline);
-  if(areaPoints.length>1){
-    const pts=[...areaPoints,areaPoints[0]];
-    areaPolyline=L.polyline(pts,{color:'#ff4444',weight:2,dashArray:'5 4',opacity:.9}).addTo(map);
-  }
-  if(areaPoints.length>=3){
-    const m2=areaM2(areaPoints);
-    const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
-    document.getElementById('area-m2').textContent=txt;
-    document.getElementById('area-badge').classList.add('show');
-  }
+
+function startDrawing(){
+  drawingMode=true;
+  drawPoints=[];
+  drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+  if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+  document.getElementById('btn-new-area').textContent='✕ Abbrechen';
+  document.getElementById('btn-new-area').classList.add('active');
+  document.getElementById('instruction').textContent='Punkte klicken → Fläche zeichnen · Enter = bestätigen';
+  document.getElementById('instruction').classList.remove('hidden');
 }
 
-function confirmArea(){
-  if(areaPoints.length<3)return;
-  if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
-  if(areaPolygon)map.removeLayer(areaPolygon);
-  areaPolygon=L.polygon(areaPoints,{color:'#ff4444',weight:2,fillColor:'#ff2222',fillOpacity:.15,opacity:.8}).addTo(map);
-  areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
-  areaMode=false;
-  document.getElementById('btn-draw-area').classList.remove('active');
-  document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
+function stopDrawing(){
+  drawingMode=false;
+  drawPoints=[];
+  drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+  if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+  document.getElementById('btn-new-area').textContent='+ Neue Fläche';
+  document.getElementById('btn-new-area').classList.remove('active');
   document.getElementById('instruction').classList.add('hidden');
-  document.getElementById('btn-belegen').disabled=false;
+}
+
+function confirmDrawing(){
+  if(drawPoints.length<3)return;
+  const color=getAreaColor(areas.length);
+  const polygon=L.polygon(drawPoints,{color,weight:2,fillColor:color,fillOpacity:.12,opacity:.9}).addTo(map);
+  const area={
+    id:'a'+Date.now(),
+    name:`Fläche ${areas.length+1}`,
+    color,
+    points:[...drawPoints],
+    polygon,
+    innerLine:null,
+    uk:getUK(),
+    fieldLayers:[],
+    rows:[],
+  };
+  areas.push(area);
+  stopDrawing();
+  setActiveArea(area.id);
+  renderAreaList();
   document.getElementById('btn-export').disabled=false;
-  updateAreaStats();
 }
 
-function updateAreaStats(){
-  if(!areaPoints.length)return;
-  const m2=areaM2(areaPoints);
-  const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`:`${Math.round(m2).toLocaleString('de')} m²`;
-  document.getElementById('area-m2').textContent=txt;
-  document.getElementById('area-badge').classList.add('show');
-  document.getElementById('st-area').textContent=txt;
-  document.getElementById('field-stats').classList.add('show');
-}
-
-function resetArea(){
-  areaMode=false;
-  areaPoints=[];
-  areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
-  if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
-  if(areaPolygon){map.removeLayer(areaPolygon);areaPolygon=null;}
-  document.getElementById('btn-draw-area').classList.remove('active');
-  document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
-  document.getElementById('area-badge').classList.remove('show');
-  document.getElementById('btn-belegen').disabled=true;
-  document.getElementById('btn-update').disabled=true;
-  document.getElementById('btn-clear').disabled=true;
-  document.getElementById('field-stats').classList.remove('show');
-  clearFieldLayers();
-}
-
-document.getElementById('btn-draw-area').addEventListener('click',()=>{
-  if(areaMode){
-    areaMode=false;areaPoints=[];
-    areaMarkers.forEach(m=>map.removeLayer(m));areaMarkers=[];
-    if(areaPolyline){map.removeLayer(areaPolyline);areaPolyline=null;}
-    document.getElementById('btn-draw-area').classList.remove('active');
-    document.getElementById('btn-draw-area').textContent='⬡ Fläche einzeichnen';
-    document.getElementById('instruction').classList.add('hidden');
-    document.getElementById('area-badge').classList.remove('show');
-  } else {
-    areaMode=true;
-    document.getElementById('btn-draw-area').classList.add('active');
-    document.getElementById('btn-draw-area').textContent='✕ Abbrechen';
-    document.getElementById('instruction').textContent='Punkte klicken → Fläche zeichnen · Enter = bestätigen';
-    document.getElementById('instruction').classList.remove('hidden');
+map.on('click',e=>{
+  if(measureMode){
+    measurePoints.push(e.latlng);
+    updateMeasure();
+    return;
+  }
+  if(!drawingMode)return;
+  drawPoints.push(e.latlng);
+  const m=L.circleMarker(e.latlng,{radius:4,color:'#ffffff',fillColor:'#ffffff',fillOpacity:1,weight:1}).addTo(map);
+  drawMarkers.push(m);
+  if(drawPolyline)map.removeLayer(drawPolyline);
+  if(drawPoints.length>=2){
+    const pts=[...drawPoints,drawPoints[0]];
+    drawPolyline=L.polyline(pts,{color:'#ffffff',weight:1.5,dashArray:'5 3',opacity:.7}).addTo(map);
   }
 });
 
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&areaMode)confirmArea();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&drawingMode)confirmDrawing();
+  if(e.key==='Escape'&&drawingMode)stopDrawing();
+});
 
-// ── FIELD POPULATION ──────────────────────────────────────────────────────
+document.getElementById('btn-new-area').addEventListener('click',()=>{
+  if(drawingMode)stopDrawing();
+  else startDrawing();
+});
+
+// ── BELEGUNG ALGORITHMUS ──────────────────────────────────────────────────
+function getScale(lat){const R=6371000;return{mPerDegLat:Math.PI/180*R,mPerDegLng:Math.PI/180*R*Math.cos(lat*Math.PI/180)};}
+function latlngsToLocal(latlngs){const origin=latlngs[0];const sc=getScale(origin.lat);return latlngs.map(ll=>({x:(ll.lng-origin.lng)*sc.mPerDegLng,y:-(ll.lat-origin.lat)*sc.mPerDegLat}));}
+function localToLatLng(local,origin){const sc=getScale(origin.lat);return[origin.lat+(-local.y)/sc.mPerDegLat,origin.lng+local.x/sc.mPerDegLng];}
+
 function signedAreaLocal(poly){let a=0;for(let i=0;i<poly.length;i++){const j=(i+1)%poly.length;a+=poly[i].x*poly[j].y-poly[j].x*poly[i].y;}return a/2;}
-
 function insetPolygon(poly,d){
   const dir=signedAreaLocal(poly)>0?-1:1,n=poly.length,edges=[];
   for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy),nx=(dy/len)*dir,ny=(-dx/len)*dir;edges.push({ax:a.x+nx*d,ay:a.y+ny*d,bx:b.x+nx*d,by:b.y+ny*d});}
@@ -726,288 +506,201 @@ function insetPolygon(poly,d){
   for(let i=0;i<n;i++){const e1=edges[i],e2=edges[(i+1)%n],dx1=e1.bx-e1.ax,dy1=e1.by-e1.ay,dx2=e2.bx-e2.ax,dy2=e2.by-e2.ay,denom=dx1*dy2-dy1*dx2;if(Math.abs(denom)<1e-10)res.push({x:e1.bx,y:e1.by});else{const t=((e2.ax-e1.ax)*dy2-(e2.ay-e1.ay)*dx2)/denom;res.push({x:e1.ax+t*dx1,y:e1.ay+t*dy1});}}
   return res;
 }
-
+function bbox(poly){return{minX:Math.min(...poly.map(p=>p.x)),maxX:Math.max(...poly.map(p=>p.x)),minY:Math.min(...poly.map(p=>p.y)),maxY:Math.max(...poly.map(p=>p.y))};}
 function hCuts(poly,yy){const xs=[],n=poly.length;for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if((a.y<=yy&&b.y>yy)||(b.y<=yy&&a.y>yy))xs.push(a.x+(yy-a.y)/(b.y-a.y)*(b.x-a.x));}return xs.sort((a,b)=>a-b);}
-
 function pip(poly,px,py){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y;if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
-
 function rectIn(poly,x,y,w,h){const N=12;for(let i=0;i<=N;i++){const fx=x+w*i/N;if(!pip(poly,fx,y)||!pip(poly,fx,y+h))return false;}for(let i=1;i<N;i++){const fy=y+h*i/N;if(!pip(poly,x,fy)||!pip(poly,x+w,fy))return false;}return true;}
-
 function tischBreite(nMod,hs){return nMod*MOD_B+(nMod-1)*hs;}
 function maxModule(availW,hs){return Math.floor((availW+hs)/(MOD_B+hs));}
+function isXBetweenCuts(cuts,x){if(cuts.length<2)return false;for(let i=0;i<cuts.length-1;i+=2){if(x>=cuts[i]&&x<=cuts[i+1])return true;}return false;}
 
-// Gibt alle Segmente einer Reihe zurück (unterstützt konkave Polygone)
-// Scannt die Reihe in kleinen Schritten und findet alle freien X-Bereiche
 function tryRowSegments(inner,rowY,TIEFE,bbI,hs){
-  if(rowY+TIEFE>bbI.maxY)return [];
-
-  // Sammle alle Schnittpunkte an Nord- UND Südkante
-  // Dann bilde den Schnitt: nur Bereiche die an BEIDEN Kanten offen sind
-  const top=hCuts(inner,rowY);
-  const bot=hCuts(inner,rowY+TIEFE);
-
-  // Zusätzlich: scanne mehrere Zwischenhöhen für robustere Erkennung
-  const allCuts=[];
-  const steps=8;
-  for(let s=0;s<=steps;s++){
-    const y=rowY+(TIEFE/steps)*s;
-    const cuts=hCuts(inner,y);
-    allCuts.push(cuts);
-  }
-
-  // Finde alle X-Positionen die an ALLEN Schnitten innerhalb liegen
-  // Rastere X-Achse in 1m Schritten und prüfe ob jeder Punkt drin liegt
-  const segments=[];
-  let segStart=null;
-
-  const STEP=1.0; // 1m Raster
+  if(rowY+TIEFE>bbI.maxY)return[];
+  const top=hCuts(inner,rowY),bot=hCuts(inner,rowY+TIEFE);
+  if(top.length<2||bot.length<2)return[];
+  const segments=[];let segStart=null;
+  const STEP=1.0;
   for(let x=bbI.minX;x<=bbI.maxX+STEP;x+=STEP){
     const xMid=x+STEP/2;
-    // Prüfe ob dieser X-Streifen vollständig in der Reihe liegt
-    const inTop=isXBetweenCuts(top,x) && isXBetweenCuts(top,xMid) && isXBetweenCuts(top,x+STEP);
-    const inBot=isXBetweenCuts(bot,x) && isXBetweenCuts(bot,xMid) && isXBetweenCuts(bot,x+STEP);
-    const inside=inTop && inBot;
-
-    if(inside && segStart===null){
-      segStart=x;
-    } else if(!inside && segStart!==null){
-      // Segment gefunden: segStart → x
+    const inside=isXBetweenCuts(top,x)&&isXBetweenCuts(top,xMid)&&isXBetweenCuts(top,x+STEP)&&isXBetweenCuts(bot,x)&&isXBetweenCuts(bot,xMid)&&isXBetweenCuts(bot,x+STEP);
+    if(inside&&segStart===null){segStart=x;}
+    else if(!inside&&segStart!==null){
       const availW=x-segStart;
       let nMod=maxModule(availW,hs);
-      while(nMod>=MOD_MIN){
-        const tb=tischBreite(nMod,hs);
-        const xs=segStart+(availW-tb)/2;
-        if(rectIn(inner,xs,rowY,tb,TIEFE)){
-          segments.push({xStart:xs,rowY,tischB:tb,nMod});
-          break;
-        }
-        nMod--;
-      }
+      while(nMod>=MOD_MIN){const tb=tischBreite(nMod,hs),xs=segStart+(availW-tb)/2;if(rectIn(inner,xs,rowY,tb,TIEFE)){segments.push({xStart:xs,rowY,tischB:tb,nMod});break;}nMod--;}
       segStart=null;
     }
   }
   return segments;
 }
 
-// Hilfsfunktion: liegt x zwischen einem Schnittpaar?
-function isXBetweenCuts(cuts,x){
-  if(cuts.length<2)return false;
-  for(let i=0;i<cuts.length-1;i+=2){
-    if(x>=cuts[i] && x<=cuts[i+1])return true;
-  }
-  return false;
-}
-
-function tryRow(inner,rowY,TIEFE,bbI,hs){
-  const segs=tryRowSegments(inner,rowY,TIEFE,bbI,hs);
-  return segs.length>0?segs[0]:null;
-}
-
-function findFirstRow(inner,bbI,TIEFE,hs){let y=bbI.minY;while(y+TIEFE<=bbI.maxY){const r=tryRow(inner,y,TIEFE,bbI,hs);if(r)return r;y+=0.5;}return null;}
-
-// Convert Leaflet latlngs to local meter coordinate system
-// Koordinatenumrechnung über Leaflet EPSG3857 (Web Mercator)
-// Nutzt map.latLngToLayerPoint für pixelgenaue Umrechnung,
-// dann Meter-Skalierung über tatsächliche Erdkrümmung
-function getScale(lat){
-  // Meter pro Grad am gegebenen Breitengrad
-  const R=6371000;
-  return{
-    mPerDegLat: Math.PI/180*R,                        // ~111319 m/°
-    mPerDegLng: Math.PI/180*R*Math.cos(lat*Math.PI/180) // variiert
-  };
-}
-
-function latlngsToLocal(latlngs){
-  const origin=latlngs[0];
-  const sc=getScale(origin.lat);
-  return latlngs.map(ll=>({
-    x:(ll.lng-origin.lng)*sc.mPerDegLng,  // Osten = positiv
-    y:-(ll.lat-origin.lat)*sc.mPerDegLat  // Süden = positiv (Y nach unten)
-  }));
-}
-
-function localToLatLng(local,origin){
-  const sc=getScale(origin.lat);
-  return[
-    origin.lat + (-local.y)/sc.mPerDegLat,
-    origin.lng + local.x/sc.mPerDegLng
-  ];
-}
-
-function debugArea(local){
-  let a=0;
-  for(let i=0;i<local.length;i++){const j=(i+1)%local.length;a+=local[i].x*local[j].y-local[j].x*local[i].y;}
-  return Math.abs(a/2);
-}
-
-function clearFieldLayers(){
-  fieldLayers.forEach(l=>map.removeLayer(l));
-  fieldLayers=[];fieldRows=[];
+function findFirstRowY(inner,bbI,TIEFE,hs){
+  let y=bbI.minY;
+  while(y+TIEFE<=bbI.maxY){if(tryRowSegments(inner,y,TIEFE,bbI,hs).length>0)return y;y+=0.5;}
+  return null;
 }
 
 function belegen(){
-  if(!areaPolygon||areaPoints.length<3)return;
-  clearFieldLayers();
-  const uk=getUK();
+  const a=getActiveArea();
+  if(!a||a.points.length<3)return;
+  a.uk=getUK();
+
+  // Clear existing
+  a.fieldLayers.forEach(l=>map.removeLayer(l));a.fieldLayers=[];
+  if(a.innerLine){map.removeLayer(a.innerLine);a.innerLine=null;}
+
+  const uk=a.uk;
   const SEHNE=uk.n*MOD_H+(uk.n-1)*uk.vspalt;
   const TIEFE=SEHNE*Math.cos(uk.winkel*Math.PI/180);
-  const origin=areaPoints[0];
-  const local=latlngsToLocal(areaPoints);
-  const bbAll={minX:Math.min(...local.map(p=>p.x)),maxX:Math.max(...local.map(p=>p.x)),minY:Math.min(...local.map(p=>p.y)),maxY:Math.max(...local.map(p=>p.y))};
+  const origin=a.points[0];
+  const local=latlngsToLocal(a.points);
   const inner=insetPolygon(local,uk.rand);
-  const bbI={minX:Math.min(...inner.map(p=>p.x)),maxX:Math.max(...inner.map(p=>p.x)),minY:Math.min(...inner.map(p=>p.y)),maxY:Math.max(...inner.map(p=>p.y))};
+  const bbI=bbox(inner);
 
-  // Innenlinie auf Karte
+  // Innenlinie
   const innerLatLngs=inner.map(pt=>localToLatLng(pt,origin));
-  const innerLine=L.polygon(innerLatLngs,{color:'#ff4444',weight:1,fillOpacity:0,dashArray:'5 3',opacity:.7}).addTo(map);
-  fieldLayers.push(innerLine);
+  const innerLine=L.polygon(innerLatLngs,{color:a.color,weight:1,fillOpacity:0,dashArray:'5 3',opacity:.6}).addTo(map);
+  a.innerLine=innerLine;
+  a.fieldLayers.push(innerLine);
 
-  // Debug sichtbar in der App anzeigen
-  const localArea=debugArea(local);
-  const W=bbI.maxX-bbI.minX, H=bbI.maxY-bbI.minY;
-  const expectedRows=Math.floor(H/(TIEFE+uk.reihe));
-  document.getElementById('debug-box').style.display='block';
-  document.getElementById('debug-box').innerHTML=
-    `<b>DEBUG</b><br>`+
-    `Fläche lokal: ${Math.round(localArea).toLocaleString('de')} m² (${(localArea/10000).toFixed(2)} ha)<br>`+
-    `Innen B×H: ${W.toFixed(1)} m × ${H.toFixed(1)} m<br>`+
-    `Tischtiefe: ${TIEFE.toFixed(3)} m · Reihe: ${uk.reihe} m<br>`+
-    `Erwartete Reihen: ~${expectedRows}`;
-
+  // Belegung
   const rows=[];
-  // Finde erste Reihe von Norden
-  let firstY=bbI.minY;
-  let firstSegs=[];
-  while(firstY+TIEFE<=bbI.maxY){
-    firstSegs=tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt);
-    if(firstSegs.length>0)break;
-    firstY+=0.5;
-  }
-  if(firstSegs.length>0){
-    firstSegs.forEach(s=>rows.push(s));
+  const firstY=findFirstRowY(inner,bbI,TIEFE,uk.hspalt);
+  if(firstY!==null){
+    tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push(s));
     let ls=firstY+TIEFE;
     while(true){
       const ny=ls+uk.reihe;
       if(ny+TIEFE>bbI.maxY)break;
-      const segs=tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt);
-      if(segs.length>0){
-        segs.forEach(s=>rows.push(s));
-        ls=ny+TIEFE;
-      } else {
-        ls=ny+TIEFE;
-      }
+      tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push(s));
+      ls=ny+TIEFE;
       if(ls>bbI.maxY)break;
     }
   }
 
-  const maxMod=rows.length>0?Math.max(...rows.map(r=>r.nMod)):0;
-  const maxW=rows.length>0?Math.max(...rows.map(r=>r.tischB)):0;
-  document.getElementById('debug-box').innerHTML+=
-    `<br>Tatsächliche Reihen: ${rows.length} · Module: ${rows.reduce((s,r)=>s+r.nMod*uk.n,0).toLocaleString('de')}`+
-    `<br>Max Module/Reihe: ${maxMod} · Max Tischbreite: ${maxW.toFixed(1)} m`+
-    `<br>Innenfläche X: ${bbI.minX.toFixed(1)} → ${bbI.maxX.toFixed(1)} m`;
-
-  // Tische auf Karte zeichnen
+  // Zeichnen
   rows.forEach(row=>{
-    // Ecken im Uhrzeigersinn: NW→NE→SE→SW
-    // rowY = Nordkante (hohe Seite, Rückseite nach Norden)
-    // rowY+TIEFE = Südkante (niedrige Seite, Vorderseite nach Süden)
     const corners=[
-      {x:row.xStart,            y:row.rowY},        // NW (Nord-West, hohe Kante)
-      {x:row.xStart+row.tischB, y:row.rowY},        // NE (Nord-Ost, hohe Kante)
-      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},  // SE (Süd-Ost, niedrige Kante)
-      {x:row.xStart,            y:row.rowY+TIEFE},  // SW (Süd-West, niedrige Kante)
+      {x:row.xStart,            y:row.rowY},
+      {x:row.xStart+row.tischB, y:row.rowY},
+      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
+      {x:row.xStart,            y:row.rowY+TIEFE},
     ];
     const llCorners=corners.map(c=>localToLatLng(c,origin));
-    const rect=L.polygon(llCorners,{color:'#4a9eff',weight:1.5,fillColor:'#4a9eff',fillOpacity:.12}).addTo(map);
-    fieldLayers.push(rect);
+    const rect=L.polygon(llCorners,{color:a.color,weight:1.5,fillColor:a.color,fillOpacity:.15}).addTo(map);
+    a.fieldLayers.push(rect);
   });
-
-  fieldRows=rows;
-  dirtyField=false;
-  document.getElementById('btn-update').disabled=true;
+  a.rows=rows;
+  updateStats(a);
+  renderAreaList();
   document.getElementById('btn-clear').disabled=false;
+  document.getElementById('btn-update').disabled=false;
   document.getElementById('btn-export').disabled=false;
-
-  const totalMod=rows.reduce((s,r)=>s+r.nMod*uk.n,0);
-  document.getElementById('st-rows').textContent=`${rows.length}`;
-  document.getElementById('st-mods').textContent=`${totalMod} (${uk.n}-Landscape)`;
-  document.getElementById('field-stats').classList.add('show');
 }
 
 document.getElementById('btn-belegen').addEventListener('click',belegen);
 document.getElementById('btn-update').addEventListener('click',belegen);
 document.getElementById('btn-clear').addEventListener('click',()=>{
-  clearFieldLayers();
+  const a=getActiveArea();
+  if(!a)return;
+  a.fieldLayers.forEach(l=>map.removeLayer(l));a.fieldLayers=[];
+  if(a.innerLine){map.removeLayer(a.innerLine);a.innerLine=null;}
+  a.rows=[];
+  updateStats(a);
+  renderAreaList();
   document.getElementById('btn-clear').disabled=true;
   document.getElementById('btn-update').disabled=true;
-  document.getElementById('st-rows').textContent='—';
-  document.getElementById('st-mods').textContent='—';
 });
 
-// ── MEASURE TOOL ──────────────────────────────────────────────────────────
-let measureMode=false, measurePoints=[], measureLayers=[];
+// ── KMZ EXPORT ────────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click',()=>{
+  if(areas.length===0)return;
+  const uk=getUK();
+  const RAD=uk.winkel*Math.PI/180;
+  const hFront=uk.uk;
+  const TIEFE_PROJ=(uk.n*MOD_H+(uk.n-1)*uk.vspalt)*Math.cos(RAD);
+  const hBack=hFront+TIEFE_PROJ*Math.tan(RAD);
 
-function fmtMeasure(m){
-  if(m>=1000) return `${(m/1000).toFixed(3)} km`;
-  return `${Math.round(m)} m`;
-}
+  let placemarks='';
+  const styles=areas.map(a=>`
+  <Style id="area_${a.id}">
+    <LineStyle><color>ff${a.color.slice(5,7)}${a.color.slice(3,5)}${a.color.slice(1,3)}</color><width>2</width></LineStyle>
+    <PolyStyle><color>22${a.color.slice(5,7)}${a.color.slice(3,5)}${a.color.slice(1,3)}</color></PolyStyle>
+  </Style>
+  <Style id="table_${a.id}">
+    <LineStyle><color>aa${a.color.slice(5,7)}${a.color.slice(3,5)}${a.color.slice(1,3)}</color><width>1</width></LineStyle>
+    <PolyStyle><color>33${a.color.slice(5,7)}${a.color.slice(3,5)}${a.color.slice(1,3)}</color></PolyStyle>
+  </Style>`).join('');
 
-function updateMeasure(){
-  // Remove old layers
-  measureLayers.forEach(l=>map.removeLayer(l));
-  measureLayers=[];
+  areas.forEach(a=>{
+    // Außenfläche
+    const coords=a.points.map(p=>`${p.lng},${p.lat},0`).join(' ');
+    placemarks+=`<Placemark><name>${a.name}</name><styleUrl>#area_${a.id}</styleUrl>
+      <Polygon><altitudeMode>clampToGround</altitudeMode>
+      <outerBoundaryIs><LinearRing><coordinates>${coords} ${a.points[0].lng},${a.points[0].lat},0</coordinates></LinearRing></outerBoundaryIs>
+      </Polygon></Placemark>`;
 
-  if(measurePoints.length===0) return;
-
-  // Draw markers
-  measurePoints.forEach((p,i)=>{
-    const m=L.circleMarker(p,{radius:5,color:'#ffdd44',fillColor:'#ffdd44',fillOpacity:1,weight:1}).addTo(map);
-    measureLayers.push(m);
+    // Tische 3D
+    a.fieldLayers.forEach((layer,i)=>{
+      if(!(layer instanceof L.Polygon)||layer.options.fillOpacity<0.1)return;
+      const lls=layer.getLatLngs()[0];
+      if(lls.length<4)return;
+      const NW=lls[0],NE=lls[1],SE=lls[2],SW=lls[3];
+      placemarks+=`<Placemark><name>Tisch ${i}</name><styleUrl>#table_${a.id}</styleUrl>
+        <Polygon><altitudeMode>relativeToGround</altitudeMode>
+        <outerBoundaryIs><LinearRing><coordinates>
+          ${NW.lng},${NW.lat},${hBack} ${NE.lng},${NE.lat},${hBack}
+          ${SE.lng},${SE.lat},${hFront} ${SW.lng},${SW.lat},${hFront}
+          ${NW.lng},${NW.lat},${hBack}
+        </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`;
+    });
   });
 
-  // Draw line between points
+  const kml=`<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document><name>PV-Planung</name>${styles}${placemarks}</Document></kml>`;
+
+  const blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
+  const url=URL.createObjectURL(blob);
+  const a2=document.createElement('a');a2.href=url;a2.download='pv-planung.kml';
+  document.body.appendChild(a2);a2.click();
+  document.body.removeChild(a2);URL.revokeObjectURL(url);
+});
+
+// ── SEARCH ─────────────────────────────────────────────────────────────────
+async function searchLocation(q){
+  const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=de,at,ch&limit=1&format=json`,{headers:{'Accept-Language':'de'}});
+  const data=await res.json();
+  if(!data.length){alert('Ort nicht gefunden.');return;}
+  map.setView([parseFloat(data[0].lat),parseFloat(data[0].lon)],14,{animate:true});
+}
+document.getElementById('search-btn').addEventListener('click',()=>{const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);});
+document.getElementById('plz-input').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=document.getElementById('plz-input').value.trim();if(q)searchLocation(q);}});
+
+// ── MEASURE ────────────────────────────────────────────────────────────────
+let measureMode=false,measurePoints=[],measureLayers=[];
+function fmtMeasure(m){return m>=1000?`${(m/1000).toFixed(3)} km`:`${Math.round(m)} m`;}
+function updateMeasure(){
+  measureLayers.forEach(l=>map.removeLayer(l));measureLayers=[];
+  measurePoints.forEach(p=>{const m=L.circleMarker(p,{radius:4,color:'#ffdd44',fillColor:'#ffdd44',fillOpacity:1,weight:1}).addTo(map);measureLayers.push(m);});
   if(measurePoints.length>=2){
     const line=L.polyline(measurePoints,{color:'#ffdd44',weight:2,dashArray:'6 3',opacity:.9}).addTo(map);
     measureLayers.push(line);
-
-    // Calculate total distance
     let total=0;
     for(let i=0;i<measurePoints.length-1;i++){
-      const segDist=map.distance(measurePoints[i],measurePoints[i+1]);
-      total+=segDist;
-
-      // Segment label
-      const mid=L.latLng(
-        (measurePoints[i].lat+measurePoints[i+1].lat)/2,
-        (measurePoints[i].lng+measurePoints[i+1].lng)/2
-      );
-      const segLabel=L.divIcon({
-        className:'',
-        html:`<div style="background:rgba(10,13,18,.85);border:1px solid rgba(255,221,68,.4);border-radius:3px;padding:2px 6px;font-family:DM Mono,monospace;font-size:10px;color:#ffdd44;white-space:nowrap;">${fmtMeasure(segDist)}</div>`,
-        iconAnchor:[30,10]
-      });
-      const segMarker=L.marker(mid,{icon:segLabel}).addTo(map);
-      measureLayers.push(segMarker);
+      const d=map.distance(measurePoints[i],measurePoints[i+1]);total+=d;
+      const mid=L.latLng((measurePoints[i].lat+measurePoints[i+1].lat)/2,(measurePoints[i].lng+measurePoints[i+1].lng)/2);
+      const icon=L.divIcon({className:'',html:`<div style="background:rgba(10,13,18,.85);border:1px solid rgba(255,221,68,.4);border-radius:3px;padding:2px 6px;font-family:DM Mono,monospace;font-size:10px;color:#ffdd44;white-space:nowrap;">${fmtMeasure(d)}</div>`,iconAnchor:[30,10]});
+      measureLayers.push(L.marker(mid,{icon}).addTo(map));
     }
-
-    // Total distance badge
-    const totalTxt = measurePoints.length>2
-      ? `Gesamt: ${fmtMeasure(total)}`
-      : fmtMeasure(total);
-    document.getElementById('measure-val').textContent=totalTxt;
+    document.getElementById('measure-val').textContent=measurePoints.length>2?`Gesamt: ${fmtMeasure(total)}`:fmtMeasure(total);
     document.getElementById('measure-badge').style.display='block';
   }
 }
-
 document.getElementById('btn-measure').addEventListener('click',()=>{
   if(measureMode){
-    // Stop measuring
-    measureMode=false;
-    measurePoints=[];
-    measureLayers.forEach(l=>map.removeLayer(l));
-    measureLayers=[];
+    measureMode=false;measurePoints=[];
+    measureLayers.forEach(l=>map.removeLayer(l));measureLayers=[];
     document.getElementById('btn-measure').classList.remove('measure-active');
     document.getElementById('btn-measure').textContent='📏 Messen';
     document.getElementById('measure-badge').style.display='none';
@@ -1020,10 +713,8 @@ document.getElementById('btn-measure').addEventListener('click',()=>{
     document.getElementById('instruction').classList.remove('hidden');
   }
 });
-
-// Double click ends measurement
 map.on('dblclick',e=>{
-  if(!measureMode) return;
+  if(!measureMode)return;
   L.DomEvent.stop(e);
   measureMode=false;
   document.getElementById('btn-measure').classList.remove('measure-active');
@@ -1031,218 +722,7 @@ map.on('dblclick',e=>{
   document.getElementById('instruction').classList.add('hidden');
 });
 
-// ── KMZ EXPORT ────────────────────────────────────────────────────────────
-function toKmlCoords(latlngs){
-  return latlngs.map(ll=>`${ll.lng},${ll.lat},0`).join(' ');
-}
-
-function buildKML2D(){
-  const styles=`
-  <Style id="areaStyle">
-    <LineStyle><color>ff4444ff</color><width>2</width></LineStyle>
-    <PolyStyle><color>220000ff</color></PolyStyle>
-  </Style>
-  <Style id="tableStyle">
-    <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
-    <PolyStyle><color>220099ff</color></PolyStyle>
-  </Style>`;
-
-  let placemarks='';
-
-  // Außenfläche
-  if(areaPoints.length>=3){
-    const coords=toKmlCoords([...areaPoints,areaPoints[0]]);
-    placemarks+=`
-  <Placemark>
-    <name>Projektfläche</name><styleUrl>#areaStyle</styleUrl>
-    <Polygon>
-      <altitudeMode>clampToGround</altitudeMode>
-      <outerBoundaryIs><LinearRing>
-        <coordinates>${coords}</coordinates>
-      </LinearRing></outerBoundaryIs>
-    </Polygon>
-  </Placemark>`;
-  }
-
-  // Tischreihen 2D (flach auf Boden)
-  let idx=0;
-  fieldLayers.forEach(layer=>{
-    if(!(layer instanceof L.Polygon))return;
-    if(layer.options.fillOpacity!==0.12)return;
-    idx++;
-    const lls=layer.getLatLngs()[0];
-    const coords=toKmlCoords([...lls,lls[0]]);
-    placemarks+=`
-  <Placemark>
-    <name>Tischreihe ${idx}</name><styleUrl>#tableStyle</styleUrl>
-    <Polygon>
-      <altitudeMode>clampToGround</altitudeMode>
-      <outerBoundaryIs><LinearRing>
-        <coordinates>${coords}</coordinates>
-      </LinearRing></outerBoundaryIs>
-    </Polygon>
-  </Placemark>`;
-  });
-
-  return`<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>PV-Planung 2D</name>
-    ${styles}
-    ${placemarks}
-  </Document>
-</kml>`;
-}
-
-function buildKML(){
-  const uk=getUK();
-  const RAD=uk.winkel*Math.PI/180;
-  // Höhen der Tischkanten
-  const hFront=uk.uk;                              // UK vorne (Nordkante)
-  const TIEFE_PROJ=(uk.n*MOD_H+(uk.n-1)*uk.vspalt)*Math.cos(RAD); // proj. Tiefe
-  const hBack=hFront+TIEFE_PROJ*Math.tan(RAD);    // OK hinten
-
-  const styles=`
-  <Style id="areaStyle">
-    <LineStyle><color>ff4444ff</color><width>2</width></LineStyle>
-    <PolyStyle><color>220000ff</color></PolyStyle>
-  </Style>
-  <Style id="tableStyle2d">
-    <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
-    <PolyStyle><color>220099ff</color></PolyStyle>
-  </Style>
-  <Style id="tableStyle3d">
-    <LineStyle><color>ffff9900</color><width>1</width></LineStyle>
-    <PolyStyle><color>aa0099ff</color></PolyStyle>
-  </Style>`;
-
-  let placemarks='';
-
-  // 1. Außenfläche (2D, auf Boden)
-  if(areaPoints.length>=3){
-    const coords=toKmlCoords([...areaPoints,areaPoints[0]]);
-    placemarks+=`
-    <Placemark>
-      <name>Projektfläche</name>
-      <styleUrl>#areaStyle</styleUrl>
-      <Polygon>
-        <altitudeMode>clampToGround</altitudeMode>
-        <outerBoundaryIs><LinearRing>
-          <coordinates>${coords}</coordinates>
-        </LinearRing></outerBoundaryIs>
-      </Polygon>
-    </Placemark>`;
-  }
-
-  // 2. Tischreihen — 3D geneigt
-  // Jeder Layer ist ein L.polygon mit 4 Ecken [NW, NE, SE, SW]
-  // NW+NE = Nordkante = Vorderseite = hFront
-  // SE+SW = Südkante  = Rückseite  = hBack
-  let tableIdx=0;
-  fieldLayers.forEach(layer=>{
-    if(!(layer instanceof L.Polygon)) return;
-    if(layer.options.fillOpacity!==0.12) return;
-    const lls=layer.getLatLngs()[0];
-    if(lls.length<4) return;
-    tableIdx++;
-
-    // Ecken: [NW, NE, SE, SW] im Uhrzeigersinn
-    // NW/NE = Nordkante = hohe Kante (hBack)
-    // SE/SW = Südkante  = niedrige Kante (hFront)
-    const NW=lls[0],NE=lls[1],SE=lls[2],SW=lls[3];
-
-    // 3D Koordinaten: lng,lat,höhe
-    // Südseite = niedrige Kante (UK vorne), Nordseite = hohe Kante (UK hinten)
-    const c_NW=`${NW.lng},${NW.lat},${hBack}`;
-    const c_NE=`${NE.lng},${NE.lat},${hBack}`;
-    const c_SE=`${SE.lng},${SE.lat},${hFront}`;
-    const c_SW=`${SW.lng},${SW.lat},${hFront}`;
-
-    // Modulplatte als 3D-Polygon (geneigtes Rechteck)
-    placemarks+=`
-    <Placemark>
-      <name>Tischreihe ${tableIdx}</name>
-      <styleUrl>#tableStyle3d</styleUrl>
-      <Polygon>
-        <altitudeMode>relativeToGround</altitudeMode>
-        <outerBoundaryIs><LinearRing>
-          <coordinates>${c_NW} ${c_NE} ${c_SE} ${c_SW} ${c_NW}</coordinates>
-        </LinearRing></outerBoundaryIs>
-      </Polygon>
-    </Placemark>`;
-
-    // Stützen als Linien (vorne + hinten)
-    // Vordere Stütze: Mitte Nordkante, von Boden bis hFront
-    const midN_lat=(NW.lat+NE.lat)/2, midN_lng=(NW.lng+NE.lng)/2;
-    const midS_lat=(SW.lat+SE.lat)/2, midS_lng=(SW.lng+SE.lng)/2;
-    placemarks+=`
-    <Placemark>
-      <name>Stütze Nord (hoch) ${tableIdx}</name>
-      <styleUrl>#tableStyle3d</styleUrl>
-      <LineString>
-        <altitudeMode>relativeToGround</altitudeMode>
-        <coordinates>${midN_lng},${midN_lat},0 ${midN_lng},${midN_lat},${hBack}</coordinates>
-      </LineString>
-    </Placemark>
-    <Placemark>
-      <name>Stütze Süd (niedrig) ${tableIdx}</name>
-      <styleUrl>#tableStyle3d</styleUrl>
-      <LineString>
-        <altitudeMode>relativeToGround</altitudeMode>
-        <coordinates>${midS_lng},${midS_lat},0 ${midS_lng},${midS_lat},${hFront}</coordinates>
-      </LineString>
-    </Placemark>`;
-  });
-
-  const kml=`<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>PV-Planung Geländeschnitt</name>
-    <description>Winkel: ${uk.winkel}° · UK vorne: ${hFront.toFixed(2)}m · UK hinten: ${hBack.toFixed(2)}m</description>
-    ${styles}
-    ${placemarks}
-  </Document>
-</kml>`;
-  return kml;
-}
-
-function downloadKML(kml, filename){
-  const blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById('btn-export').addEventListener('click',()=>{
-  if(areaPoints.length<3){alert('Bitte erst eine Fläche einzeichnen.');return;}
-  document.getElementById('export-overlay').classList.add('open');
-});
-
-document.getElementById('export-close').addEventListener('click',()=>{
-  document.getElementById('export-overlay').classList.remove('open');
-});
-document.getElementById('export-overlay').addEventListener('click',e=>{
-  if(e.target===document.getElementById('export-overlay'))
-    document.getElementById('export-overlay').classList.remove('open');
-});
-
-document.getElementById('export-2d').addEventListener('click',()=>{
-  document.getElementById('export-overlay').classList.remove('open');
-  downloadKML(buildKML2D(),'pv-planung-2d.kml');
-});
-
-document.getElementById('export-3d').addEventListener('click',()=>{
-  document.getElementById('export-overlay').classList.remove('open');
-  downloadKML(buildKML(),'pv-planung-3d.kml');
-});
-
-// Enable export button when area is confirmed
-const origConfirmArea=confirmArea;
-
-// ── INIT ──────────────────────────────────────────────────────────────────
+// ── INIT ───────────────────────────────────────────────────────────────────
 drawSchnitt();
 </script>
 </body>
