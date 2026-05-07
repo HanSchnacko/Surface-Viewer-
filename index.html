@@ -186,6 +186,18 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
                 <select class="fsel" id="uk-rand" onchange="ukChange()">
                   <option value="3">3 m</option><option value="4" selected>4 m</option><option value="5">5 m</option>
                 </select></div>
+              <div class="field"><div class="field-label">Ausrichtung</div>
+                <select class="fsel" id="uk-ausrichtung" onchange="ukChange()">
+                  <option value="sued">Süd-Ausrichtung</option>
+                  <option value="wo">West-Ost-Ausrichtung</option>
+                </select></div>
+              <div class="field" id="field-ridge" style="display:none"><div class="field-label">Firstabstand (mm)</div>
+                <select class="fsel" id="uk-ridge" onchange="ukChange()">
+                  <option value="300">300 mm</option>
+                  <option value="500" selected>500 mm</option>
+                  <option value="700">700 mm</option>
+                  <option value="1000">1000 mm</option>
+                </select></div>
             </div>
             <div id="schnitt-wrap">
               <div id="schnitt-label">Tischschnitt Vorschau</div>
@@ -252,6 +264,8 @@ function getActiveArea(){ return areas.find(a=>a.id===activeAreaId)||null; }
 
 // ── UK CONFIG ─────────────────────────────────────────────────────────────
 function getUK(){
+  const ausrichtung=document.getElementById('uk-ausrichtung').value;
+  document.getElementById('field-ridge').style.display=ausrichtung==='wo'?'block':'none';
   return{
     n:parseInt(document.getElementById('uk-anord').value),
     modH:parseFloat(document.getElementById('uk-modul').value),
@@ -261,6 +275,8 @@ function getUK(){
     uk:parseFloat(document.getElementById('uk-uk').value)/1000,
     reihe:parseFloat(document.getElementById('uk-reihe').value),
     rand:parseFloat(document.getElementById('uk-rand').value),
+    ausrichtung,
+    ridge:parseFloat(document.getElementById('uk-ridge').value)/1000,
   };
 }
 
@@ -274,6 +290,9 @@ function setUKFromArea(area){
   document.getElementById('uk-uk').value=u.uk*1000;
   document.getElementById('uk-reihe').value=u.reihe;
   document.getElementById('uk-rand').value=u.rand;
+  if(u.ausrichtung)document.getElementById('uk-ausrichtung').value=u.ausrichtung;
+  if(u.ridge)document.getElementById('uk-ridge').value=Math.round(u.ridge*1000);
+  getUK(); // trigger display update
   drawSchnitt();
 }
 
@@ -539,6 +558,104 @@ function findFirstRowY(inner,bbI,TIEFE,hs){
   return null;
 }
 
+// ── MODUL-GENERIERUNG ─────────────────────────────────────────────────────
+function makeModulesSued(rx,ry,rw,rh,n,winkel,vspalt){
+  // n Module übereinander in N-S (kurze Seite MOD_H proj.), lange Seite MOD_B in W-O
+  const RAD=winkel*Math.PI/180;
+  const modH_proj=MOD_H*Math.cos(RAD);
+  const vspalt_proj=vspalt*Math.cos(RAD);
+  const mods=[];
+  for(let row=0;row<n;row++){
+    const my=ry+row*(modH_proj+vspalt_proj);
+    let x=rx;
+    while(x+MOD_B<=rx+rw+0.001){
+      mods.push({x,y:my,w:MOD_B,h:modH_proj});
+      x+=MOD_B+MOD_HSPALT;
+    }
+  }
+  return mods;
+}
+function makeModulesWO(rx,ry,rw,rh,n,winkel,vspalt){
+  // n Module nebeneinander in W-O (kurze Seite MOD_H proj.), lange Seite MOD_B in N-S
+  const RAD=winkel*Math.PI/180;
+  const modH_proj=MOD_H*Math.cos(RAD);
+  const vspalt_proj=vspalt*Math.cos(RAD);
+  const mods=[];
+  let y=ry;
+  while(y+MOD_B<=ry+rh+0.001){
+    for(let col=0;col<n;col++){
+      const mx=rx+col*(modH_proj+vspalt_proj);
+      mods.push({x:mx,y,w:modH_proj,h:MOD_B});
+    }
+    y+=MOD_B+MOD_HSPALT;
+  }
+  return mods;
+}
+
+// Zeichne Module als Leaflet-Polylines auf der Karte
+function drawModulesOnMap(mods,origin,color,layerArr){
+  mods.forEach(m=>{
+    const corners=[
+      {x:m.x,    y:m.y},
+      {x:m.x+m.w,y:m.y},
+      {x:m.x+m.w,y:m.y+m.h},
+      {x:m.x,    y:m.y+m.h},
+    ];
+    const lls=corners.map(c=>localToLatLng(c,origin));
+    const poly=L.polygon(lls,{color,weight:0.6,fillColor:color,fillOpacity:0.08,opacity:0.4}).addTo(map);
+    layerArr.push(poly);
+  });
+}
+
+// ── WO ALGORITHMUS HELPERS ─────────────────────────────────────────────────
+function vCuts(poly,xx){
+  const ys=[],n=poly.length;
+  for(let i=0;i<n;i++){const a=poly[i],b=poly[(i+1)%n];if((a.x<=xx&&b.x>xx)||(b.x<=xx&&a.x>xx))ys.push(a.y+(xx-a.x)/(b.x-a.x)*(b.y-a.y));}
+  return ys.sort((a,b)=>a-b);
+}
+function isYBC(cuts,y){for(let i=0;i<cuts.length-1;i+=2)if(y>=cuts[i]&&y<=cuts[i+1])return true;return false;}
+
+function tryWoStripe(inner,colX,TW,bbI,hs){
+  if(colX+TW>bbI.maxX)return[];
+  const left=vCuts(inner,colX),right=vCuts(inner,colX+TW);
+  if(left.length<2||right.length<2)return[];
+  const segs=[];let ss=null;
+  for(let y=bbI.minY;y<=bbI.maxY+1;y+=1){
+    const inside=isYBC(left,y)&&isYBC(left,y+1)&&isYBC(right,y)&&isYBC(right,y+1);
+    if(inside&&ss===null)ss=y;
+    else if(!inside&&ss!==null){
+      const avail=y-ss;
+      let nMod=Math.floor((avail+hs)/(MOD_B+hs));
+      while(nMod>=MOD_MIN){const tl=nMod*MOD_B+(nMod-1)*hs,ys=ss+(avail-tl)/2;if(rectIn(inner,colX,ys,TW,tl)){segs.push({y:ys,h:tl,n:nMod});break;}nMod--;}
+      ss=null;
+    }
+  }
+  return segs;
+}
+
+function tryDoppelReihe(inner,colX,TW,ridge,bbI,hs){
+  const segsW=tryWoStripe(inner,colX,TW,bbI,hs);
+  const segsO=tryWoStripe(inner,colX+TW+ridge,TW,bbI,hs);
+  if(!segsW.length||!segsO.length)return[];
+  const pairs=[];
+  for(const sw of segsW){for(const so of segsO){
+    const yS=Math.max(sw.y,so.y),yE=Math.min(sw.y+sw.h,so.y+so.h);
+    if(yE<=yS)continue;
+    const avail=yE-yS;
+    let nMod=Math.floor((avail+hs)/(MOD_B+hs));
+    while(nMod>=MOD_MIN){
+      const tl=nMod*MOD_B+(nMod-1)*hs,ys=yS+(avail-tl)/2;
+      if(rectIn(inner,colX,ys,TW,tl)&&rectIn(inner,colX+TW+ridge,ys,TW,tl)){
+        pairs.push({yStart:ys,h:tl,n:nMod,colW:colX,colO:colX+TW+ridge,tw:TW});break;
+      }
+      nMod--;
+    }
+  }}
+  return pairs;
+}
+
+let MOD_HSPALT=0.020; // wird in belegen gesetzt
+
 function belegen(){
   const a=getActiveArea();
   if(!a||a.points.length<3)return;
@@ -549,8 +666,10 @@ function belegen(){
   if(a.innerLine){map.removeLayer(a.innerLine);a.innerLine=null;}
 
   const uk=a.uk;
+  MOD_HSPALT=uk.hspalt;
+  const RAD=uk.winkel*Math.PI/180;
   const SEHNE=uk.n*MOD_H+(uk.n-1)*uk.vspalt;
-  const TIEFE=SEHNE*Math.cos(uk.winkel*Math.PI/180);
+  const TIEFE=SEHNE*Math.cos(RAD);
   const origin=a.points[0];
   const local=latlngsToLocal(a.points);
   const inner=insetPolygon(local,uk.rand);
@@ -562,33 +681,81 @@ function belegen(){
   a.innerLine=innerLine;
   a.fieldLayers.push(innerLine);
 
-  // Belegung
   const rows=[];
-  const firstY=findFirstRowY(inner,bbI,TIEFE,uk.hspalt);
-  if(firstY!==null){
-    tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push(s));
-    let ls=firstY+TIEFE;
+
+  if(uk.ausrichtung==='sued'){
+    // ── SÜD-AUSRICHTUNG ──────────────────────────────────────────────────
+    const firstY=findFirstRowY(inner,bbI,TIEFE,uk.hspalt);
+    if(firstY!==null){
+      tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
+      let ls=firstY+TIEFE;
+      while(true){
+        const ny=ls+uk.reihe;if(ny+TIEFE>bbI.maxY)break;
+        tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
+        ls=ny+TIEFE;if(ls>bbI.maxY)break;
+      }
+    }
+    rows.forEach(row=>{
+      // Tisch
+      const corners=[
+        {x:row.xStart,            y:row.rowY},
+        {x:row.xStart+row.tischB, y:row.rowY},
+        {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
+        {x:row.xStart,            y:row.rowY+TIEFE},
+      ];
+      const llCorners=corners.map(c=>localToLatLng(c,origin));
+      const rect=L.polygon(llCorners,{color:a.color,weight:1.5,fillColor:a.color,fillOpacity:.15}).addTo(map);
+      a.fieldLayers.push(rect);
+      // Module
+      const mods=makeModulesSued(row.xStart,row.rowY,row.tischB,TIEFE,uk.n,uk.winkel,uk.vspalt);
+      drawModulesOnMap(mods,origin,a.color,a.fieldLayers);
+    });
+
+  } else {
+    // ── WEST-OST-AUSRICHTUNG ──────────────────────────────────────────────
+    const DR=2*TIEFE+uk.ridge;
+    const colorW=a.color;
+    // Grün für Tisch-Ost: etwas aufgehellt
+    const colorO='#00e5a0';
+
+    const drawDR=(colX)=>{
+      tryDoppelReihe(inner,colX,TIEFE,uk.ridge,bbI,uk.hspalt).forEach(pr=>{
+        // Tisch West (blau = Flächenfarbe)
+        const cornersW=[
+          {x:pr.colW,       y:pr.yStart},
+          {x:pr.colW+pr.tw, y:pr.yStart},
+          {x:pr.colW+pr.tw, y:pr.yStart+pr.h},
+          {x:pr.colW,       y:pr.yStart+pr.h},
+        ];
+        const rectW=L.polygon(cornersW.map(c=>localToLatLng(c,origin)),{color:colorW,weight:1.5,fillColor:colorW,fillOpacity:.15}).addTo(map);
+        a.fieldLayers.push(rectW);
+        drawModulesOnMap(makeModulesWO(pr.colW,pr.yStart,pr.tw,pr.h,uk.n,uk.winkel,uk.vspalt),origin,colorW,a.fieldLayers);
+
+        // Tisch Ost (grün)
+        const cornersO=[
+          {x:pr.colO,       y:pr.yStart},
+          {x:pr.colO+pr.tw, y:pr.yStart},
+          {x:pr.colO+pr.tw, y:pr.yStart+pr.h},
+          {x:pr.colO,       y:pr.yStart+pr.h},
+        ];
+        const rectO=L.polygon(cornersO.map(c=>localToLatLng(c,origin)),{color:colorO,weight:1.5,fillColor:colorO,fillOpacity:.15}).addTo(map);
+        a.fieldLayers.push(rectO);
+        drawModulesOnMap(makeModulesWO(pr.colO,pr.yStart,pr.tw,pr.h,uk.n,uk.winkel,uk.vspalt),origin,colorO,a.fieldLayers);
+
+        rows.push({xStart:pr.colW,rowY:pr.yStart,tischB:pr.tw*2+uk.ridge,nMod:pr.n*2,side:'wo'});
+      });
+    };
+
+    let firstX=bbI.minX;
+    while(firstX+DR<=bbI.maxX){if(tryDoppelReihe(inner,firstX,TIEFE,uk.ridge,bbI,uk.hspalt).length>0)break;firstX+=0.1;}
+    drawDR(firstX);
+    let lastX=firstX+DR;
     while(true){
-      const ny=ls+uk.reihe;
-      if(ny+TIEFE>bbI.maxY)break;
-      tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push(s));
-      ls=ny+TIEFE;
-      if(ls>bbI.maxY)break;
+      const nx=lastX+uk.reihe;if(nx+DR>bbI.maxX)break;
+      drawDR(nx);lastX=nx+DR;if(lastX>bbI.maxX)break;
     }
   }
 
-  // Zeichnen
-  rows.forEach(row=>{
-    const corners=[
-      {x:row.xStart,            y:row.rowY},
-      {x:row.xStart+row.tischB, y:row.rowY},
-      {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
-      {x:row.xStart,            y:row.rowY+TIEFE},
-    ];
-    const llCorners=corners.map(c=>localToLatLng(c,origin));
-    const rect=L.polygon(llCorners,{color:a.color,weight:1.5,fillColor:a.color,fillOpacity:.15}).addTo(map);
-    a.fieldLayers.push(rect);
-  });
   a.rows=rows;
   updateStats(a);
   renderAreaList();
