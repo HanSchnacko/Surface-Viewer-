@@ -82,7 +82,10 @@ header{
 /* ── RIGHT PANEL ── */
 #panel{
   background:var(--surface);border-left:1px solid var(--border);
-  display:flex;flex-direction:column;overflow:hidden;
+  display:grid;
+  grid-template-rows:1fr auto auto;
+  overflow:hidden;
+  height:100%;
 }
 
 /* Panel sections */
@@ -126,7 +129,19 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 .sv-val{font-size:.8rem;color:var(--accent);font-family:var(--font);font-weight:600;}
 
 /* Panel action buttons */
-#panel-actions{padding:14px 16px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;flex:1;}
+#panel-actions{padding:14px 16px;display:flex;flex-direction:column;gap:7px;}
+
+/* Scrollable area = accordion + actions */
+#panel-scroll{overflow-y:auto;flex:1;}
+
+/* Fixed bottom bar */
+#panel-bottom{
+  border-top:1px solid var(--border);
+  padding:12px 16px;
+  display:flex;flex-direction:column;gap:7px;
+  background:var(--surface);
+  flex-shrink:0;
+}
 .p-btn{
   width:100%;padding:9px;border-radius:var(--radius);font-family:var(--mono);
   font-size:.74rem;font-weight:500;cursor:pointer;border:1px solid var(--border);
@@ -147,8 +162,9 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 
 /* Stats */
 #field-stats{
-  padding:10px 16px;border-top:1px solid var(--border);
+  padding:8px 16px;border-top:1px solid var(--border);
   font-size:.7rem;color:var(--muted);line-height:1.8;display:none;
+  flex-shrink:0;background:var(--surface);
 }
 #field-stats.show{display:block;}
 .stat-line span{color:var(--text);}
@@ -191,6 +207,8 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
     <!-- RIGHT PANEL -->
     <div id="panel">
 
+      <!-- SCROLLABLE AREA starts with accordion -->
+      <div id="panel-scroll">
       <!-- ACCORDION: Unterkonstruktion -->
       <div class="p-section">
         <div class="acc-header" id="acc-uk-hdr">
@@ -272,24 +290,31 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
         </div>
       </div>
 
-      <!-- PANEL ACTIONS -->
-      <div id="panel-actions">
-        <button class="p-btn" id="btn-draw-area">⬡ Fläche einzeichnen</button>
-        <div class="p-divider"></div>
-        <button class="p-btn green" id="btn-belegen" disabled>⚡ Feld belegen</button>
-        <button class="p-btn blue" id="btn-update" disabled>↺ Update Belegung</button>
-        <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
-        <div class="p-divider"></div>
-        <button class="p-btn" id="btn-gelände" disabled style="opacity:.3;">Gelände ausgeben</button>
-        <div class="p-divider"></div>
-        <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
+      <!-- SCROLLABLE AREA -->
+      <div id="panel-scroll">
+        <div id="panel-actions">
+          <button class="p-btn" id="btn-gelände" disabled style="opacity:.3;">Gelände ausgeben</button>
+        </div>
       </div>
+
+      </div><!-- end panel-scroll -->
 
       <!-- STATS -->
       <div id="field-stats">
         <div class="stat-line">Fläche: <span id="st-area">—</span></div>
         <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
         <div class="stat-line">Module: <span id="st-mods">—</span></div>
+      </div>
+
+      <!-- FIXED BOTTOM BUTTONS -->
+      <div id="panel-bottom">
+        <button class="p-btn" id="btn-draw-area">⬡ Fläche einzeichnen</button>
+        <div class="p-divider"></div>
+        <button class="p-btn green" id="btn-belegen" disabled>⚡ Feld belegen</button>
+        <button class="p-btn blue" id="btn-update" disabled>↺ Update Belegung</button>
+        <button class="p-btn red" id="btn-clear" disabled>✕ Clear Field</button>
+        <div class="p-divider"></div>
+        <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
       </div>
     </div>
   </div>
