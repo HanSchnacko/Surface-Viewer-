@@ -830,27 +830,24 @@ function belegen(){
   const sperrLocal=(a.sperrflaechen||[]).map(sf=>latlngsToLocal(sf.points));
 
   // pip-Funktion die Sperrflächen ausschließt
-  function pipWithSperr(px,py){
+  const pipWithSperr=(px,py)=>{
     if(!pip(inner,px,py))return false;
     for(const sf of sperrLocal){if(pip(sf,px,py))return false;}
     return true;
-  }
+  };
 
-  // Überschreibe rectIn für diese Belegung
-  function rectInWithSperr(x,y,w,h){
+  // rectIn mit Sperrflächen
+  const rectInWithSperr=(x,y,w,h)=>{
     const N=12;
     for(let i=0;i<=N;i++){const fx=x+w*i/N;if(!pipWithSperr(fx,y)||!pipWithSperr(fx,y+h))return false;}
     for(let i=1;i<N;i++){const fy=y+h*i/N;if(!pipWithSperr(x,fy)||!pipWithSperr(x+w,fy))return false;}
     return true;
-  }
+  };
 
   const rows=[];
 
-  // Shadow rectIn for this belegen call
-  const _origRectIn=rectIn;
-  const rectInOrig=rectIn;
-  // Use rectInWithSperr for all segment finding
-  function trySuedSegsS(inn,rowY,TIEFE,bbI,hs){
+  // Sperr-aware segment functions (arrow functions to avoid hoisting issues)
+  const trySuedSegsS=(inn,rowY,TIEFE,bbI,hs)=>{
     if(rowY+TIEFE>bbI.maxY)return[];
     const top=hCuts(inn,rowY),bot=hCuts(inn,rowY+TIEFE);
     if(top.length<2||bot.length<2)return[];
@@ -866,11 +863,11 @@ function belegen(){
       }
     }
     return segs;
-  }
-  function findFirstRowYS(inn,bbI,TIEFE,hs){
+  };
+  const findFirstRowYS=(inn,bbI,TIEFE,hs)=>{
     let y=bbI.minY;while(y+TIEFE<=bbI.maxY){if(trySuedSegsS(inn,y,TIEFE,bbI,hs).length>0)return y;y+=0.5;}return null;
-  }
-  function tryWoStripeS(inn,colX,TW,bbI,hs){
+  };
+  const tryWoStripeS=(inn,colX,TW,bbI,hs)=>{
     if(colX+TW>bbI.maxX)return[];
     const left=vCuts(inn,colX),right=vCuts(inn,colX+TW);
     if(left.length<2||right.length<2)return[];
@@ -886,8 +883,8 @@ function belegen(){
       }
     }
     return segs;
-  }
-  function tryDoppelReiheS(inn,colX,TW,ridge,bbI,hs){
+  };
+  const tryDoppelReiheS=(inn,colX,TW,ridge,bbI,hs)=>{
     const segsW=tryWoStripeS(inn,colX,TW,bbI,hs);
     const segsO=tryWoStripeS(inn,colX+TW+ridge,TW,bbI,hs);
     if(!segsW.length||!segsO.length)return[];
@@ -906,7 +903,7 @@ function belegen(){
       }
     }}
     return pairs;
-  }
+  };
 
   if(uk.ausrichtung==='sued'){
     // ── SÜD-AUSRICHTUNG ──────────────────────────────────────────────────
