@@ -539,12 +539,12 @@ map.on('click',e=>{
   }
   if(sperrMode){
     sperrPoints.push(e.latlng);
-    const m=L.circleMarker(e.latlng,{radius:4,color:'#ff5533',fillColor:'#ff5533',fillOpacity:1,weight:1}).addTo(map);
+    const m=L.circleMarker(e.latlng,{radius:4,color:'#ffdd00',fillColor:'#ffdd00',fillOpacity:1,weight:1}).addTo(map);
     sperrMarkers.push(m);
     if(sperrPolyline)map.removeLayer(sperrPolyline);
     if(sperrPoints.length>=2){
       const pts=[...sperrPoints,sperrPoints[0]];
-      sperrPolyline=L.polyline(pts,{color:'#ff5533',weight:1.5,dashArray:'4 3',opacity:.8}).addTo(map);
+      sperrPolyline=L.polyline(pts,{color:'#ffdd00',weight:1.5,dashArray:'4 3',opacity:.9}).addTo(map);
     }
     return;
   }
@@ -574,6 +574,7 @@ document.getElementById('btn-new-area').addEventListener('click',()=>{
 // ── BELEGUNG ALGORITHMUS ──────────────────────────────────────────────────
 function getScale(lat){const R=6371000;return{mPerDegLat:Math.PI/180*R,mPerDegLng:Math.PI/180*R*Math.cos(lat*Math.PI/180)};}
 function latlngsToLocal(latlngs){const origin=latlngs[0];const sc=getScale(origin.lat);return latlngs.map(ll=>({x:(ll.lng-origin.lng)*sc.mPerDegLng,y:-(ll.lat-origin.lat)*sc.mPerDegLat}));}
+function latlngsToLocalOrigin(latlngs,origin){const sc=getScale(origin.lat);return latlngs.map(ll=>({x:(ll.lng-origin.lng)*sc.mPerDegLng,y:-(ll.lat-origin.lat)*sc.mPerDegLat}));}
 function localToLatLng(local,origin){const sc=getScale(origin.lat);return[origin.lat+(-local.y)/sc.mPerDegLat,origin.lng+local.x/sc.mPerDegLng];}
 
 function signedAreaLocal(poly){let a=0;for(let i=0;i<poly.length;i++){const j=(i+1)%poly.length;a+=poly[i].x*poly[j].y-poly[j].x*poly[i].y;}return a/2;}
@@ -636,7 +637,7 @@ function renderSperrList(){
     div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.72rem;';
     const m2=areaM2(sf.points);
     const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
-    div.innerHTML=`<span style="color:var(--muted);">Sperrfläche ${i+1} <span style="color:var(--warn);">${txt}</span></span>
+    div.innerHTML=`<span style="color:var(--muted);">Sperrfläche ${i+1} <span style="color:#ffdd00;">${txt}</span></span>
       <button onclick="deleteSperr(${i})" style="background:none;border:none;color:var(--warn);cursor:pointer;font-size:.8rem;padding:2px 6px;">✕</button>`;
     list.appendChild(div);
   });
@@ -681,15 +682,13 @@ function confirmSperrDrawing(){
 
   // Schraffur-Polygon (rot)
   const polygon=L.polygon(sperrPoints,{
-    color:'#ff5533',weight:1.5,
-    fillColor:'#ff5533',fillOpacity:0.25,
-    dashArray:'4 3',opacity:0.8
+    color:'#ffdd00',weight:2,
+    fillColor:'#ffaa00',fillOpacity:0.35,
+    dashArray:'6 4',opacity:0.9
   }).addTo(map);
 
-  // Schraffur-Muster via SVG Pattern
-  polygon.setStyle({fillPattern:null});
-
   a.sperrflaechen.push({points:[...sperrPoints],polygon});
+  polygon.bringToFront();
   stopSperrDrawing();
   renderSperrList();
 
@@ -827,7 +826,10 @@ function belegen(){
   a.fieldLayers.push(innerLine);
 
   // Sperrflächen in lokale Koordinaten konvertieren
-  const sperrLocal=(a.sperrflaechen||[]).map(sf=>latlngsToLocal(sf.points));
+  // Sperrflächen MÜSSEN denselben Ursprung wie die Hauptfläche verwenden!
+  const sperrLocal=(a.sperrflaechen||[])
+    .filter(sf=>sf.points&&sf.points.length>=3)
+    .map(sf=>latlngsToLocalOrigin(sf.points,origin));
 
   // pip-Funktion die Sperrflächen ausschließt
   const pipWithSperr=(px,py)=>{
@@ -1000,6 +1002,8 @@ function belegen(){
   }
 
   a.rows=rows;
+  // Sperrflächen wieder nach vorne bringen
+  (a.sperrflaechen||[]).forEach(sf=>{if(sf.polygon)sf.polygon.bringToFront();});
   updateStats(a);
   renderAreaList();
   updateLabels();
