@@ -221,6 +221,20 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
           </div>
         </div>
 
+        <!-- SPERRFLÄCHEN ACCORDION -->
+        <div class="p-section">
+          <div class="acc-header" id="acc-sperr-hdr">
+            <div class="acc-title">Sperrflächen</div>
+            <div class="acc-arrow" id="acc-sperr-arrow">▼</div>
+          </div>
+          <div class="acc-body" id="acc-sperr-body">
+            <div class="acc-inner" style="padding-top:10px;">
+              <button class="p-btn" id="btn-add-sperr" style="margin-bottom:8px;">+ Sperrfläche definieren</button>
+              <div id="sperr-list"><div class="area-empty" id="sperr-empty" style="padding:8px 0;font-size:.7rem;color:var(--muted);">Keine Sperrflächen definiert</div></div>
+            </div>
+          </div>
+        </div>
+
         <!-- STATS aktive Fläche -->
         <div id="area-stats">
           <div class="stat-line">Fläche: <span id="st-area">—</span></div>
@@ -366,6 +380,10 @@ document.getElementById('acc-uk-hdr').addEventListener('click',()=>{
   const open=document.getElementById('acc-uk-body').classList.toggle('open');
   document.getElementById('acc-uk-arrow').classList.toggle('open',open);
 });
+document.getElementById('acc-sperr-hdr').addEventListener('click',()=>{
+  const open=document.getElementById('acc-sperr-body').classList.toggle('open');
+  document.getElementById('acc-sperr-arrow').classList.toggle('open',open);
+});
 
 // ── AREA LIST RENDER ──────────────────────────────────────────────────────
 function renderAreaList(){
@@ -416,6 +434,7 @@ function setActiveArea(id){
     setUKFromArea(a);
     updateStats(a);
     updateZoneStats(a);
+    renderSperrList();
     document.getElementById('btn-belegen').disabled=false;
     document.getElementById('btn-clear').disabled=a.fieldLayers.length===0;
     document.getElementById('btn-update').disabled=a.fieldLayers.length===0;
@@ -503,6 +522,7 @@ function confirmDrawing(){
     uk:getUK(),
     fieldLayers:[],
     rows:[],
+    sperrflaechen:[],
   };
   areas.push(area);
   stopDrawing();
@@ -517,6 +537,17 @@ map.on('click',e=>{
     updateMeasure();
     return;
   }
+  if(sperrMode){
+    sperrPoints.push(e.latlng);
+    const m=L.circleMarker(e.latlng,{radius:4,color:'#ff5533',fillColor:'#ff5533',fillOpacity:1,weight:1}).addTo(map);
+    sperrMarkers.push(m);
+    if(sperrPolyline)map.removeLayer(sperrPolyline);
+    if(sperrPoints.length>=2){
+      const pts=[...sperrPoints,sperrPoints[0]];
+      sperrPolyline=L.polyline(pts,{color:'#ff5533',weight:1.5,dashArray:'4 3',opacity:.8}).addTo(map);
+    }
+    return;
+  }
   if(!drawingMode)return;
   drawPoints.push(e.latlng);
   const m=L.circleMarker(e.latlng,{radius:4,color:'#ffffff',fillColor:'#ffffff',fillOpacity:1,weight:1}).addTo(map);
@@ -529,6 +560,8 @@ map.on('click',e=>{
 });
 
 document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&sperrMode){confirmSperrDrawing();return;}
+  if(e.key==='Escape'&&sperrMode){stopSperrDrawing();return;}
   if(e.key==='Enter'&&drawingMode)confirmDrawing();
   if(e.key==='Escape'&&drawingMode)stopDrawing();
 });
@@ -584,6 +617,91 @@ function findFirstRowY(inner,bbI,TIEFE,hs){
   while(y+TIEFE<=bbI.maxY){if(tryRowSegments(inner,y,TIEFE,bbI,hs).length>0)return y;y+=0.5;}
   return null;
 }
+
+// ── SPERRFLÄCHEN ──────────────────────────────────────────────────────────
+let sperrMode=false;
+let sperrPoints=[],sperrMarkers=[],sperrPolyline=null;
+
+function renderSperrList(){
+  const a=getActiveArea();
+  const list=document.getElementById('sperr-list');
+  const empty=document.getElementById('sperr-empty');
+  if(!a||!a.sperrflaechen||a.sperrflaechen.length===0){
+    list.innerHTML='';list.appendChild(empty);empty.style.display='block';return;
+  }
+  empty.style.display='none';
+  list.innerHTML='';
+  a.sperrflaechen.forEach((sf,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.72rem;';
+    const m2=areaM2(sf.points);
+    const txt=m2>=10000?`${(m2/10000).toFixed(2)} ha`:`${Math.round(m2).toLocaleString('de')} m²`;
+    div.innerHTML=`<span style="color:var(--muted);">Sperrfläche ${i+1} <span style="color:var(--warn);">${txt}</span></span>
+      <button onclick="deleteSperr(${i})" style="background:none;border:none;color:var(--warn);cursor:pointer;font-size:.8rem;padding:2px 6px;">✕</button>`;
+    list.appendChild(div);
+  });
+}
+
+function deleteSperr(idx){
+  const a=getActiveArea();
+  if(!a||!a.sperrflaechen)return;
+  if(a.sperrflaechen[idx].polygon)map.removeLayer(a.sperrflaechen[idx].polygon);
+  a.sperrflaechen.splice(idx,1);
+  renderSperrList();
+}
+
+function startSperrDrawing(){
+  const a=getActiveArea();
+  if(!a){alert('Bitte erst eine Fläche auswählen.');return;}
+  sperrMode=true;
+  sperrPoints=[];
+  sperrMarkers.forEach(m=>map.removeLayer(m));sperrMarkers=[];
+  if(sperrPolyline){map.removeLayer(sperrPolyline);sperrPolyline=null;}
+  document.getElementById('btn-add-sperr').textContent='✕ Abbrechen';
+  document.getElementById('btn-add-sperr').classList.add('active');
+  document.getElementById('instruction').textContent='Sperrfläche zeichnen · Punkte klicken · Enter = bestätigen';
+  document.getElementById('instruction').classList.remove('hidden');
+}
+
+function stopSperrDrawing(){
+  sperrMode=false;
+  sperrPoints=[];
+  sperrMarkers.forEach(m=>map.removeLayer(m));sperrMarkers=[];
+  if(sperrPolyline){map.removeLayer(sperrPolyline);sperrPolyline=null;}
+  document.getElementById('btn-add-sperr').textContent='+ Sperrfläche definieren';
+  document.getElementById('btn-add-sperr').classList.remove('active');
+  document.getElementById('instruction').classList.add('hidden');
+}
+
+function confirmSperrDrawing(){
+  if(sperrPoints.length<3)return;
+  const a=getActiveArea();
+  if(!a)return;
+  if(!a.sperrflaechen)a.sperrflaechen=[];
+
+  // Schraffur-Polygon (rot)
+  const polygon=L.polygon(sperrPoints,{
+    color:'#ff5533',weight:1.5,
+    fillColor:'#ff5533',fillOpacity:0.25,
+    dashArray:'4 3',opacity:0.8
+  }).addTo(map);
+
+  // Schraffur-Muster via SVG Pattern
+  polygon.setStyle({fillPattern:null});
+
+  a.sperrflaechen.push({points:[...sperrPoints],polygon});
+  stopSperrDrawing();
+  renderSperrList();
+
+  // Accordion öffnen falls zu
+  document.getElementById('acc-sperr-body').classList.add('open');
+  document.getElementById('acc-sperr-arrow').classList.add('open');
+}
+
+document.getElementById('btn-add-sperr').addEventListener('click',()=>{
+  if(sperrMode)stopSperrDrawing();
+  else startSperrDrawing();
+});
 
 // ── MODUL-GENERIERUNG ─────────────────────────────────────────────────────
 function makeModulesSued(rx,ry,rw,rh,n,winkel,vspalt){
@@ -708,17 +826,97 @@ function belegen(){
   a.innerLine=innerLine;
   a.fieldLayers.push(innerLine);
 
+  // Sperrflächen in lokale Koordinaten konvertieren
+  const sperrLocal=(a.sperrflaechen||[]).map(sf=>latlngsToLocal(sf.points));
+
+  // pip-Funktion die Sperrflächen ausschließt
+  function pipWithSperr(px,py){
+    if(!pip(inner,px,py))return false;
+    for(const sf of sperrLocal){if(pip(sf,px,py))return false;}
+    return true;
+  }
+
+  // Überschreibe rectIn für diese Belegung
+  function rectInWithSperr(x,y,w,h){
+    const N=12;
+    for(let i=0;i<=N;i++){const fx=x+w*i/N;if(!pipWithSperr(fx,y)||!pipWithSperr(fx,y+h))return false;}
+    for(let i=1;i<N;i++){const fy=y+h*i/N;if(!pipWithSperr(x,fy)||!pipWithSperr(x+w,fy))return false;}
+    return true;
+  }
+
   const rows=[];
+
+  // Shadow rectIn for this belegen call
+  const _origRectIn=rectIn;
+  const rectInOrig=rectIn;
+  // Use rectInWithSperr for all segment finding
+  function trySuedSegsS(inn,rowY,TIEFE,bbI,hs){
+    if(rowY+TIEFE>bbI.maxY)return[];
+    const top=hCuts(inn,rowY),bot=hCuts(inn,rowY+TIEFE);
+    if(top.length<2||bot.length<2)return[];
+    const segs=[];let ss=null;
+    for(let x=bbI.minX;x<=bbI.maxX+1;x+=1){
+      const inside=isXBC(top,x)&&isXBC(top,x+1)&&isXBC(bot,x)&&isXBC(bot,x+1);
+      if(inside&&ss===null)ss=x;
+      else if(!inside&&ss!==null){
+        const avail=x-ss;
+        let nMod=Math.floor((avail+hs)/(MOD_B+hs));
+        while(nMod>=MOD_MIN){const tb=nMod*MOD_B+(nMod-1)*hs,xs=ss+(avail-tb)/2;if(rectInWithSperr(xs,rowY,tb,TIEFE)){segs.push({xStart:xs,rowY,tischB:tb,nMod});break;}nMod--;}
+        ss=null;
+      }
+    }
+    return segs;
+  }
+  function findFirstRowYS(inn,bbI,TIEFE,hs){
+    let y=bbI.minY;while(y+TIEFE<=bbI.maxY){if(trySuedSegsS(inn,y,TIEFE,bbI,hs).length>0)return y;y+=0.5;}return null;
+  }
+  function tryWoStripeS(inn,colX,TW,bbI,hs){
+    if(colX+TW>bbI.maxX)return[];
+    const left=vCuts(inn,colX),right=vCuts(inn,colX+TW);
+    if(left.length<2||right.length<2)return[];
+    const segs=[];let ss=null;
+    for(let y=bbI.minY;y<=bbI.maxY+1;y+=1){
+      const inside=isYBC(left,y)&&isYBC(left,y+1)&&isYBC(right,y)&&isYBC(right,y+1);
+      if(inside&&ss===null)ss=y;
+      else if(!inside&&ss!==null){
+        const avail=y-ss;
+        let nMod=Math.floor((avail+hs)/(MOD_B+hs));
+        while(nMod>=MOD_MIN){const tl=nMod*MOD_B+(nMod-1)*hs,ys=ss+(avail-tl)/2;if(rectInWithSperr(colX,ys,TW,tl)){segs.push({y:ys,h:tl,n:nMod});break;}nMod--;}
+        ss=null;
+      }
+    }
+    return segs;
+  }
+  function tryDoppelReiheS(inn,colX,TW,ridge,bbI,hs){
+    const segsW=tryWoStripeS(inn,colX,TW,bbI,hs);
+    const segsO=tryWoStripeS(inn,colX+TW+ridge,TW,bbI,hs);
+    if(!segsW.length||!segsO.length)return[];
+    const pairs=[];
+    for(const sw of segsW){for(const so of segsO){
+      const yS=Math.max(sw.y,so.y),yE=Math.min(sw.y+sw.h,so.y+so.h);
+      if(yE<=yS)continue;
+      const avail=yE-yS;
+      let nMod=Math.floor((avail+hs)/(MOD_B+hs));
+      while(nMod>=MOD_MIN){
+        const tl=nMod*MOD_B+(nMod-1)*hs,ys=yS+(avail-tl)/2;
+        if(rectInWithSperr(colX,ys,TW,tl)&&rectInWithSperr(colX+TW+ridge,ys,TW,tl)){
+          pairs.push({yStart:ys,h:tl,n:nMod,colW:colX,colO:colX+TW+ridge,tw:TW});break;
+        }
+        nMod--;
+      }
+    }}
+    return pairs;
+  }
 
   if(uk.ausrichtung==='sued'){
     // ── SÜD-AUSRICHTUNG ──────────────────────────────────────────────────
-    const firstY=findFirstRowY(inner,bbI,TIEFE,uk.hspalt);
+    const firstY=findFirstRowYS(inner,bbI,TIEFE,uk.hspalt);
     if(firstY!==null){
-      tryRowSegments(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
+      trySuedSegsS(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
       let ls=firstY+TIEFE;
       while(true){
         const ny=ls+uk.reihe;if(ny+TIEFE>bbI.maxY)break;
-        tryRowSegments(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
+        trySuedSegsS(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
         ls=ny+TIEFE;if(ls>bbI.maxY)break;
       }
     }
@@ -744,7 +942,7 @@ function belegen(){
     const colorO='#00e5a0';
 
     const drawDR=(colX)=>{
-      tryDoppelReihe(inner,colX,TIEFE,uk.ridge,bbI,uk.hspalt).forEach(pr=>{
+      tryDoppelReiheS(inner,colX,TIEFE,uk.ridge,bbI,uk.hspalt).forEach(pr=>{
         // Tisch West (blau = Flächenfarbe)
         const cornersW=[
           {x:pr.colW,       y:pr.yStart},
@@ -772,7 +970,7 @@ function belegen(){
     };
 
     let firstX=bbI.minX;
-    while(firstX+DR<=bbI.maxX){if(tryDoppelReihe(inner,firstX,TIEFE,uk.ridge,bbI,uk.hspalt).length>0)break;firstX+=0.1;}
+    while(firstX+DR<=bbI.maxX){if(tryDoppelReiheS(inner,firstX,TIEFE,uk.ridge,bbI,uk.hspalt).length>0)break;firstX+=0.1;}
     drawDR(firstX);
     let lastX=firstX+DR;
     while(true){
