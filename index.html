@@ -852,8 +852,19 @@ function belegen(){
     const top=hCuts(inn,rowY),bot=hCuts(inn,rowY+TIEFE);
     if(top.length<2||bot.length<2)return[];
     const segs=[];let ss=null;
+    // Scanne in 1m Schritten — prüfe ob Streifen im Polygon UND nicht in Sperrfläche
+    const isInsideS=(x)=>{
+      if(!isXBC(top,x)||!isXBC(top,x+1)||!isXBC(bot,x)||!isXBC(bot,x+1))return false;
+      // Zusätzlich: kein Punkt in einer Sperrfläche
+      for(const sf of sperrLocal){
+        if(pip(sf,x,rowY)||pip(sf,x,rowY+TIEFE)||pip(sf,x+1,rowY)||pip(sf,x+1,rowY+TIEFE))return false;
+        const yMid=rowY+TIEFE/2;
+        if(pip(sf,x,yMid)||pip(sf,x+1,yMid))return false;
+      }
+      return true;
+    };
     for(let x=bbI.minX;x<=bbI.maxX+1;x+=1){
-      const inside=isXBC(top,x)&&isXBC(top,x+1)&&isXBC(bot,x)&&isXBC(bot,x+1);
+      const inside=isInsideS(x);
       if(inside&&ss===null)ss=x;
       else if(!inside&&ss!==null){
         const avail=x-ss;
@@ -872,8 +883,17 @@ function belegen(){
     const left=vCuts(inn,colX),right=vCuts(inn,colX+TW);
     if(left.length<2||right.length<2)return[];
     const segs=[];let ss=null;
+    const isInsideWO=(y)=>{
+      if(!isYBC(left,y)||!isYBC(left,y+1)||!isYBC(right,y)||!isYBC(right,y+1))return false;
+      for(const sf of sperrLocal){
+        const xMid=colX+TW/2;
+        if(pip(sf,colX,y)||pip(sf,colX+TW,y)||pip(sf,colX,y+1)||pip(sf,colX+TW,y+1))return false;
+        if(pip(sf,xMid,y)||pip(sf,xMid,y+1))return false;
+      }
+      return true;
+    };
     for(let y=bbI.minY;y<=bbI.maxY+1;y+=1){
-      const inside=isYBC(left,y)&&isYBC(left,y+1)&&isYBC(right,y)&&isYBC(right,y+1);
+      const inside=isInsideWO(y);
       if(inside&&ss===null)ss=y;
       else if(!inside&&ss!==null){
         const avail=y-ss;
@@ -905,16 +925,19 @@ function belegen(){
     return pairs;
   };
 
-  if(uk.ausrichtung==='sued'){
+  const ausrichtung=uk.ausrichtung||'sued'; // fallback for old areas
+  if(ausrichtung==='sued'){
     // ── SÜD-AUSRICHTUNG ──────────────────────────────────────────────────
     const firstY=findFirstRowYS(inner,bbI,TIEFE,uk.hspalt);
     if(firstY!==null){
       trySuedSegsS(inner,firstY,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
       let ls=firstY+TIEFE;
       while(true){
-        const ny=ls+uk.reihe;if(ny+TIEFE>bbI.maxY)break;
+        const ny=ls+uk.reihe;
+        if(ny+TIEFE>bbI.maxY)break;
         trySuedSegsS(inner,ny,TIEFE,bbI,uk.hspalt).forEach(s=>rows.push({...s,side:'sued'}));
-        ls=ny+TIEFE;if(ls>bbI.maxY)break;
+        ls=ny+TIEFE;
+        if(ls>bbI.maxY)break;
       }
     }
     rows.forEach(row=>{
@@ -932,8 +955,8 @@ function belegen(){
     });
 
   } else {
-    // ── WEST-OST-AUSRICHTUNG ──────────────────────────────────────────────
-    const DR=2*TIEFE+uk.ridge;
+    // ── WEST-OST-AUSRICHTUNG ─────────────────────────────────────────────
+    const DR=2*TIEFE+(uk.ridge||0.5);
     const colorW=a.color;
     // Grün für Tisch-Ost: etwas aufgehellt
     const colorO='#00e5a0';
