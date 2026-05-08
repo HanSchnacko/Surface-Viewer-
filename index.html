@@ -207,6 +207,15 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
                   <option value="700">700 mm</option>
                   <option value="1000">1000 mm</option>
                 </select></div>
+              <div class="field"><div class="field-label">Tischabstand</div>
+                <select class="fsel" id="uk-tischabstand" onchange="ukChange()">
+                  <option value="50">50 mm</option>
+                  <option value="100" selected>100 mm</option>
+                  <option value="150">150 mm</option>
+                  <option value="200">200 mm</option>
+                  <option value="250">250 mm</option>
+                  <option value="300">300 mm</option>
+                </select></div>
             </div>
             <div id="schnitt-wrap">
               <div id="schnitt-label">Tischschnitt Vorschau</div>
@@ -281,9 +290,8 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 
 <script>
 const MOD_B=2.382,MOD_H=1.134,MOD_MIN=6;
-const TISCH_ABSTAND=0.100; // 100mm zwischen Einzeltischen
 const TISCH_GROESSEN=[12,10,8,6]; // Priorität groß→klein
-const TISCH_FARBEN={12:'#4a9eff',10:'#00e5a0',8:'#ff9900',6:'#cc88ff'};
+const TISCH_COLOR='#4a9eff'; // alle Tische einheitlich blau
 function tischLaengeMeter(tg,hs){return tg*MOD_B+(tg-1)*hs;}
 
 // Flächen-Farben
@@ -322,6 +330,7 @@ function getUK(){
     rand:parseFloat(document.getElementById('uk-rand').value),
     ausrichtung,
     ridge:parseFloat(document.getElementById('uk-ridge').value)/1000,
+    tischabstand:parseFloat(document.getElementById('uk-tischabstand').value)/1000,
   };
 }
 
@@ -337,6 +346,7 @@ function setUKFromArea(area){
   document.getElementById('uk-rand').value=u.rand;
   if(u.ausrichtung)document.getElementById('uk-ausrichtung').value=u.ausrichtung;
   if(u.ridge)document.getElementById('uk-ridge').value=Math.round(u.ridge*1000);
+  if(u.tischabstand)document.getElementById('uk-tischabstand').value=Math.round(u.tischabstand*1000);
   getUK(); // trigger display update
   drawSchnitt();
 }
@@ -480,7 +490,7 @@ function updateStats(a){
   if(a.tischStats){
     const ts=a.tischStats;
     const total=Object.values(ts).reduce((s,v)=>s+v,0);
-    const breakdown=TISCH_GROESSEN.filter(tg=>ts[tg]>0).map(tg=>`<span style="color:${TISCH_FARBEN[tg]}">${tg}er:${ts[tg]}</span>`).join(' ');
+    const breakdown=TISCH_GROESSEN.filter(tg=>ts[tg]>0).map(tg=>`${tg}er:${ts[tg]}`).join(' · ');
     document.getElementById('st-tische').innerHTML=total?`${total} Tische — ${breakdown}`:'—';
   } else {
     document.getElementById('st-tische').innerHTML='—';
@@ -718,7 +728,8 @@ document.getElementById('btn-add-sperr').addEventListener('click',()=>{
 
 // ── TISCHLÄNGEN AUFTEILUNG ────────────────────────────────────────────────
 // Fülle verfügbare Breite (Süd W-O) mit Tischen nach Priorität 12→10→8→6
-function fillSegmentSued(xL,availW,hs){
+function fillSegmentSued(xL,availW,hs,ta){
+  ta=ta||0.1;
   const tische=[];let x=xL,remaining=availW;
   while(remaining>0.001){
     let placed=false;
@@ -726,8 +737,8 @@ function fillSegmentSued(xL,availW,hs){
       const tw=tischLaengeMeter(tg,hs);
       if(tw<=remaining+0.001){
         tische.push({x,w:tw,tg});
-        x+=tw+TISCH_ABSTAND;
-        remaining-=tw+TISCH_ABSTAND;
+        x+=tw+ta;
+        remaining-=tw+ta;
         placed=true;break;
       }
     }
@@ -736,7 +747,8 @@ function fillSegmentSued(xL,availW,hs){
   return tische;
 }
 // Fülle verfügbare Höhe (WO N-S) mit Tischen nach Priorität 12→10→8→6
-function fillSegmentWO(yS,availH,hs){
+function fillSegmentWO(yS,availH,hs,ta){
+  ta=ta||0.1;
   const tische=[];let y=yS,remaining=availH;
   while(remaining>0.001){
     let placed=false;
@@ -744,8 +756,8 @@ function fillSegmentWO(yS,availH,hs){
       const tl=tischLaengeMeter(tg,hs);
       if(tl<=remaining+0.001){
         tische.push({y,h:tl,tg});
-        y+=tl+TISCH_ABSTAND;
-        remaining-=tl+TISCH_ABSTAND;
+        y+=tl+ta;
+        remaining-=tl+ta;
         placed=true;break;
       }
     }
@@ -996,9 +1008,9 @@ function belegen(){
     }
     rows.forEach(row=>{
       // Reihe in Einzeltische aufteilen (12er→10er→8er→6er)
-      const tische=fillSegmentSued(row.xStart,row.tischB,uk.hspalt);
+      const tische=fillSegmentSued(row.xStart,row.tischB,uk.hspalt,uk.tischabstand||0.1);
       tische.forEach(t=>{
-        const col=TISCH_FARBEN[t.tg]||a.color;
+        const col=TISCH_COLOR;
         const corners=[
           {x:t.x,     y:row.rowY},
           {x:t.x+t.w, y:row.rowY},
@@ -1007,8 +1019,11 @@ function belegen(){
         ];
         const llCorners=corners.map(c=>localToLatLng(c,origin));
         const rect=L.polygon(llCorners,{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
-        rect.bindTooltip(`${t.tg}er Tisch`,{permanent:false,direction:'center'});
         a.fieldLayers.push(rect);
+        // Label zentriert im Tisch
+        const ctrLL=localToLatLng({x:t.x+t.w/2,y:row.rowY+TIEFE/2},origin);
+        const lbl=L.marker(ctrLL,{icon:L.divIcon({className:'',html:`<div style="font-family:DM Mono,monospace;font-size:10px;color:#4a9eff;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%)">${t.tg}×${uk.n}</div>`,iconAnchor:[0,0]}),interactive:false}).addTo(map);
+        a.fieldLayers.push(lbl);
       });
     });
 
@@ -1022,22 +1037,26 @@ function belegen(){
     const drawDR=(colX)=>{
       tryDoppelReiheS(inner,colX,TIEFE,uk.ridge,bbI,uk.hspalt).forEach(pr=>{
         // Tisch West: aufteilen in Einzeltische (N-S)
-        const tischeW=fillSegmentWO(pr.yStart,pr.h,uk.hspalt);
+        const tischeW=fillSegmentWO(pr.yStart,pr.h,uk.hspalt,uk.tischabstand||0.1);
         tischeW.forEach(t=>{
-          const col=TISCH_FARBEN[t.tg]||colorW;
+          const col=TISCH_COLOR;
           const cW=[{x:pr.colW,y:t.y},{x:pr.colW+pr.tw,y:t.y},{x:pr.colW+pr.tw,y:t.y+t.h},{x:pr.colW,y:t.y+t.h}];
           const rW=L.polygon(cW.map(c=>localToLatLng(c,origin)),{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
-          rW.bindTooltip(`${t.tg}er T-West`,{permanent:false,direction:'center'});
           a.fieldLayers.push(rW);
+          const ctrW=localToLatLng({x:pr.colW+pr.tw/2,y:t.y+t.h/2},origin);
+          const lblW=L.marker(ctrW,{icon:L.divIcon({className:'',html:`<div style="font-family:DM Mono,monospace;font-size:10px;color:#4a9eff;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%)">${t.tg}×${uk.n}</div>`,iconAnchor:[0,0]}),interactive:false}).addTo(map);
+          a.fieldLayers.push(lblW);
         });
         // Tisch Ost: aufteilen in Einzeltische (N-S)
-        const tischeO=fillSegmentWO(pr.yStart,pr.h,uk.hspalt);
+        const tischeO=fillSegmentWO(pr.yStart,pr.h,uk.hspalt,uk.tischabstand||0.1);
         tischeO.forEach(t=>{
-          const col=TISCH_FARBEN[t.tg]||colorO;
+          const col=TISCH_COLOR;
           const cO=[{x:pr.colO,y:t.y},{x:pr.colO+pr.tw,y:t.y},{x:pr.colO+pr.tw,y:t.y+t.h},{x:pr.colO,y:t.y+t.h}];
           const rO=L.polygon(cO.map(c=>localToLatLng(c,origin)),{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
-          rO.bindTooltip(`${t.tg}er T-Ost`,{permanent:false,direction:'center'});
           a.fieldLayers.push(rO);
+          const ctrO=localToLatLng({x:pr.colO+pr.tw/2,y:t.y+t.h/2},origin);
+          const lblO=L.marker(ctrO,{icon:L.divIcon({className:'',html:`<div style="font-family:DM Mono,monospace;font-size:10px;color:#4a9eff;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%)">${t.tg}×${uk.n}</div>`,iconAnchor:[0,0]}),interactive:false}).addTo(map);
+          a.fieldLayers.push(lblO);
         });
         rows.push({xStart:pr.colW,rowY:pr.yStart,tischB:pr.tw*2+uk.ridge,nMod:pr.n*2,side:'wo'});
       });
@@ -1055,12 +1074,8 @@ function belegen(){
 
   a.rows=rows;
   // Tischgrössen zählen
+  // Count tisch sizes from rows
   a.tischStats={12:0,10:0,8:0,6:0};
-  a.fieldLayers.forEach(l=>{
-    if(!(l instanceof L.Polygon)||l.options.fillOpacity<0.1)return;
-    const col=l.options.color;
-    for(const[tg,c]of Object.entries(TISCH_FARBEN)){if(c===col)a.tischStats[tg]=(a.tischStats[tg]||0)+1;}
-  });
   // Sperrflächen wieder nach vorne bringen
   (a.sperrflaechen||[]).forEach(sf=>{if(sf.polygon)sf.polygon.bringToFront();});
   updateStats(a);
