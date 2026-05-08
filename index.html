@@ -240,6 +240,7 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
           <div class="stat-line">Fläche: <span id="st-area">—</span></div>
           <div class="stat-line">Reihen: <span id="st-rows">—</span></div>
           <div class="stat-line">Module: <span id="st-mods">—</span></div>
+          <div class="stat-line" style="font-size:.65rem;line-height:1.6;">Tische: <span id="st-tische">—</span></div>
         </div>
         <!-- LASTZONEN -->
         <div id="zone-stats">
@@ -280,6 +281,10 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
 
 <script>
 const MOD_B=2.382,MOD_H=1.134,MOD_MIN=6;
+const TISCH_ABSTAND=0.100; // 100mm zwischen Einzeltischen
+const TISCH_GROESSEN=[12,10,8,6]; // Priorität groß→klein
+const TISCH_FARBEN={12:'#4a9eff',10:'#00e5a0',8:'#ff9900',6:'#cc88ff'};
+function tischLaengeMeter(tg,hs){return tg*MOD_B+(tg-1)*hs;}
 
 // Flächen-Farben
 const AREA_COLORS=['#ff4444','#ff9900','#ffdd00','#00cc66','#0099ff','#cc44ff','#ff44aa'];
@@ -469,8 +474,17 @@ function updateStats(a){
   const m2txt=m2>=10000?`${(m2/10000).toFixed(2)} ha (${Math.round(m2).toLocaleString('de')} m²)`:`${Math.round(m2).toLocaleString('de')} m²`;
   document.getElementById('st-area').textContent=m2txt;
   document.getElementById('st-rows').textContent=a.rows.length||'—';
-  const mods=a.rows.reduce((s,r)=>s+r.nMod*a.uk.n,0);
+  const mods=a.rows.reduce((s,r)=>s+r.nMod*(a.uk?.n||6),0);
   document.getElementById('st-mods').textContent=mods||'—';
+  // Tischgrössen
+  if(a.tischStats){
+    const ts=a.tischStats;
+    const total=Object.values(ts).reduce((s,v)=>s+v,0);
+    const breakdown=TISCH_GROESSEN.filter(tg=>ts[tg]>0).map(tg=>`<span style="color:${TISCH_FARBEN[tg]}">${tg}er:${ts[tg]}</span>`).join(' ');
+    document.getElementById('st-tische').innerHTML=total?`${total} Tische — ${breakdown}`:'—';
+  } else {
+    document.getElementById('st-tische').innerHTML='—';
+  }
   document.getElementById('area-stats').classList.add('show');
 }
 
@@ -701,6 +715,44 @@ document.getElementById('btn-add-sperr').addEventListener('click',()=>{
   if(sperrMode)stopSperrDrawing();
   else startSperrDrawing();
 });
+
+// ── TISCHLÄNGEN AUFTEILUNG ────────────────────────────────────────────────
+// Fülle verfügbare Breite (Süd W-O) mit Tischen nach Priorität 12→10→8→6
+function fillSegmentSued(xL,availW,hs){
+  const tische=[];let x=xL,remaining=availW;
+  while(remaining>0.001){
+    let placed=false;
+    for(const tg of TISCH_GROESSEN){
+      const tw=tischLaengeMeter(tg,hs);
+      if(tw<=remaining+0.001){
+        tische.push({x,w:tw,tg});
+        x+=tw+TISCH_ABSTAND;
+        remaining-=tw+TISCH_ABSTAND;
+        placed=true;break;
+      }
+    }
+    if(!placed)break;
+  }
+  return tische;
+}
+// Fülle verfügbare Höhe (WO N-S) mit Tischen nach Priorität 12→10→8→6
+function fillSegmentWO(yS,availH,hs){
+  const tische=[];let y=yS,remaining=availH;
+  while(remaining>0.001){
+    let placed=false;
+    for(const tg of TISCH_GROESSEN){
+      const tl=tischLaengeMeter(tg,hs);
+      if(tl<=remaining+0.001){
+        tische.push({y,h:tl,tg});
+        y+=tl+TISCH_ABSTAND;
+        remaining-=tl+TISCH_ABSTAND;
+        placed=true;break;
+      }
+    }
+    if(!placed)break;
+  }
+  return tische;
+}
 
 // ── MODUL-GENERIERUNG ─────────────────────────────────────────────────────
 function makeModulesSued(rx,ry,rw,rh,n,winkel,vspalt){
@@ -1002,6 +1054,13 @@ function belegen(){
   }
 
   a.rows=rows;
+  // Tischgrössen zählen
+  a.tischStats={12:0,10:0,8:0,6:0};
+  a.fieldLayers.forEach(l=>{
+    if(!(l instanceof L.Polygon)||l.options.fillOpacity<0.1)return;
+    const col=l.options.color;
+    for(const[tg,c]of Object.entries(TISCH_FARBEN)){if(c===col)a.tischStats[tg]=(a.tischStats[tg]||0)+1;}
+  });
   // Sperrflächen wieder nach vorne bringen
   (a.sperrflaechen||[]).forEach(sf=>{if(sf.polygon)sf.polygon.bringToFront();});
   updateStats(a);
