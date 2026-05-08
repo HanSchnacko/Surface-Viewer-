@@ -244,6 +244,42 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
           </div>
         </div>
 
+        <!-- RAMMPLAN ACCORDION -->
+        <div class="p-section">
+          <div class="acc-header" id="acc-rp-hdr">
+            <div class="acc-title">🔨 Rammplan erstellen</div>
+            <div class="acc-arrow" id="acc-rp-arrow">▼</div>
+          </div>
+          <div class="acc-body" id="acc-rp-body">
+            <div class="acc-inner" style="padding-top:10px;">
+              <div style="font-size:.65rem;color:var(--muted);margin-bottom:8px;">Zonenkonfiguration W→O (gespiegelt):</div>
+              <table style="width:100%;border-collapse:collapse;font-size:.7rem;">
+                <thead><tr>
+                  <th style="text-align:left;padding:3px 4px;font-size:.6rem;color:var(--muted);border-bottom:1px solid var(--border);">Zone</th>
+                  <th style="text-align:left;padding:3px 4px;font-size:.6rem;color:var(--muted);border-bottom:1px solid var(--border);">Größe</th>
+                  <th style="text-align:left;padding:3px 4px;font-size:.6rem;color:var(--muted);border-bottom:1px solid var(--border);">Anzahl</th>
+                </tr></thead>
+                <tbody>
+                  <tr><td style="padding:4px;border-bottom:1px solid var(--border);"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#FFD700;margin-right:4px;vertical-align:middle;"></span>Gelb</td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-gelb-s" style="font-size:.68rem;padding:3px 6px;"><option value="6">6er</option><option value="8" selected>8er</option><option value="10">10er</option><option value="12">12er</option></select></td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-gelb-c" style="font-size:.68rem;padding:3px 6px;"><option value="1" selected>1</option><option value="2">2</option></select></td></tr>
+                  <tr><td style="padding:4px;border-bottom:1px solid var(--border);"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2196F3;margin-right:4px;vertical-align:middle;"></span>Blau</td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-blau-s" style="font-size:.68rem;padding:3px 6px;"><option value="6">6er</option><option value="8" selected>8er</option><option value="10">10er</option><option value="12">12er</option></select></td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-blau-c" style="font-size:.68rem;padding:3px 6px;"><option value="1" selected>1</option><option value="2">2</option></select></td></tr>
+                  <tr><td style="padding:4px;border-bottom:1px solid var(--border);"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F44336;margin-right:4px;vertical-align:middle;"></span>Rot</td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-rot-s" style="font-size:.68rem;padding:3px 6px;"><option value="6">6er</option><option value="8" selected>8er</option><option value="10">10er</option><option value="12">12er</option></select></td>
+                    <td style="padding:4px;border-bottom:1px solid var(--border);"><select class="fsel" id="rp-rot-c" style="font-size:.68rem;padding:3px 6px;"><option value="1" selected>1</option><option value="2">2</option></select></td></tr>
+                  <tr><td style="padding:4px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;border:1px solid #aaa;margin-right:4px;vertical-align:middle;"></span>Weiß</td>
+                    <td style="padding:4px;"><select class="fsel" id="rp-weiss-s" style="font-size:.68rem;padding:3px 6px;"><option value="auto" selected>Auto</option><option value="12">12er</option><option value="10">10er</option><option value="8">8er</option><option value="6">6er</option></select></td>
+                    <td style="padding:4px;font-size:.6rem;color:var(--muted);">Rest</td></tr>
+                </tbody>
+              </table>
+              <div style="font-size:.6rem;color:var(--muted);margin-top:6px;">↔ Gespiegelt: … Rot → Blau → Gelb</div>
+              <div id="rp-stat" style="font-size:.62rem;color:var(--muted);line-height:1.7;margin-top:6px;"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- STATS aktive Fläche -->
         <div id="area-stats">
           <div class="stat-line">Fläche: <span id="st-area">—</span></div>
@@ -253,14 +289,8 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
         </div>
         <!-- LASTZONEN -->
         <div id="zone-stats">
-          <div class="zone-row">
-            <span class="zone-label">Windlastzone</span>
-            <span class="zone-val zone-wlz" id="zone-wlz">—</span>
-          </div>
-          <div class="zone-row">
-            <span class="zone-label">Schneelastzone</span>
-            <span class="zone-val zone-slz" id="zone-slz">—</span>
-          </div>
+          <div class="zone-row"><span class="zone-label">Windlastzone</span><span class="zone-val zone-wlz" id="zone-wlz">—</span></div>
+          <div class="zone-row"><span class="zone-label">Schneelastzone</span><span class="zone-val zone-slz" id="zone-slz">—</span></div>
         </div>
       </div>
 
@@ -276,6 +306,10 @@ select.fsel:hover,select.fsel:focus{border-color:var(--accent2);}
             <option value="3d" selected>3D (geneigt)</option>
           </select>
         </div>
+        <div class="p-divider"></div>
+        <button class="p-btn" id="btn-rammplan" disabled style="background:rgba(255,200,0,0.1);color:#cc9900;border-color:rgba(255,200,0,0.4);">🔨 Rammplan erstellen</button>
+        <button class="p-btn" id="btn-rammplan-clear" disabled style="opacity:.5;">↺ Rammplan zurücksetzen</button>
+        <div class="p-divider"></div>
         <button class="p-btn" id="btn-export" disabled>⬇ Als KMZ exportieren</button>
       </div>
     </div>
@@ -398,6 +432,10 @@ document.getElementById('acc-uk-hdr').addEventListener('click',()=>{
 document.getElementById('acc-sperr-hdr').addEventListener('click',()=>{
   const open=document.getElementById('acc-sperr-body').classList.toggle('open');
   document.getElementById('acc-sperr-arrow').classList.toggle('open',open);
+});
+document.getElementById('acc-rp-hdr').addEventListener('click',()=>{
+  const open=document.getElementById('acc-rp-body').classList.toggle('open');
+  document.getElementById('acc-rp-arrow').classList.toggle('open',open);
 });
 
 // ── AREA LIST RENDER ──────────────────────────────────────────────────────
@@ -1084,6 +1122,7 @@ function belegen(){
   document.getElementById('btn-clear').disabled=false;
   document.getElementById('btn-update').disabled=false;
   document.getElementById('btn-export').disabled=false;
+  document.getElementById('btn-rammplan').disabled=false;
 }
 
 document.getElementById('btn-belegen').addEventListener('click',belegen);
@@ -1359,6 +1398,163 @@ function updateZoneStats(area){
   slzEl.textContent=slz==='N/A'?'Nicht gefunden':`SLZ ${slz}`;
   slzEl.className='zone-val zone-slz';
 }
+
+// ── RAMMPLAN ──────────────────────────────────────────────────────────────
+const ZONE_COLORS_RP={
+  gelb:{color:'#FFD700',fillOpacity:.8,weight:1.5},
+  blau:{color:'#2196F3',fillOpacity:.8,weight:1.5},
+  rot: {color:'#F44336',fillOpacity:.8,weight:1.5},
+  weiss:{color:'#cccccc',fillOpacity:.6,weight:1},
+};
+
+function tischLenRp(tg,hs){return tg*MOD_B+(tg-1)*hs;}
+
+function fillRammplan(xL,avail,hs,ta,zones){
+  // zones = [{zone,tg,count},...] left side only
+  const left=[];
+  for(const z of zones){
+    for(let i=0;i<z.count;i++) left.push({tg:z.tg,w:tischLenRp(z.tg,hs),zone:z.zone});
+  }
+  const right=[...left].reverse();
+  const sideW=left.reduce((s,t)=>s+t.w+ta,0);
+  const midAvail=avail-sideW*2;
+  const result=[];
+  let x=xL;
+
+  if(midAvail<0){
+    // Not enough for full zones — fill from outside in
+    let rem=avail;
+    const leftPlaced=[];
+    for(const t of left){if(t.w<=rem+0.001){leftPlaced.push({...t,x});x+=t.w+ta;rem-=t.w+ta;}else break;}
+    const rightPlaced=[];
+    let rx=xL+avail;
+    for(const t of right){if(t.w<=rem+0.001){rx-=t.w;rightPlaced.unshift({...t,x:rx});rx-=ta;rem-=t.w+ta;}else break;}
+    result.push(...leftPlaced,...rightPlaced);
+  } else {
+    // Left zones
+    for(const t of left){result.push({...t,x});x+=t.w+ta;}
+    // Middle (weiß)
+    const midZone=zones.find(z=>z.zone==='weiss');
+    const midTg=midZone&&midZone.tg?midZone.tg:null;
+    let midRem=midAvail;
+    if(midTg){
+      while(midRem>0.001){const tw=tischLenRp(midTg,hs);if(tw<=midRem+0.001){result.push({tg:midTg,w:tw,zone:'weiss',x});x+=tw+ta;midRem-=tw+ta;}else break;}
+    } else {
+      while(midRem>0.001){let placed=false;for(const tg of TISCH_GROESSEN){const tw=tischLenRp(tg,hs);if(tw<=midRem+0.001){result.push({tg,w:tw,zone:'weiss',x});x+=tw+ta;midRem-=tw+ta;placed=true;break;}}if(!placed)break;}
+    }
+    // Right zones (mirror)
+    for(const t of right){result.push({...t,x});x+=t.w+ta;}
+  }
+  return result;
+}
+
+function rammplanErstellen(){
+  const a=getActiveArea();
+  if(!a||!a.rows.length){alert('Erst Feld belegen!');return;}
+
+  const uk=a.uk;
+  const ta=uk.tischabstand||0.1;
+  const RAD=uk.winkel*Math.PI/180;
+  const SEHNE=uk.n*MOD_H+(uk.n-1)*uk.vspalt;
+  const TIEFE=SEHNE*Math.cos(RAD);
+  const origin=a.points[0];
+
+  // Get zone config
+  const gS=parseInt(document.getElementById('rp-gelb-s').value);
+  const gC=parseInt(document.getElementById('rp-gelb-c').value);
+  const bS=parseInt(document.getElementById('rp-blau-s').value);
+  const bC=parseInt(document.getElementById('rp-blau-c').value);
+  const rS=parseInt(document.getElementById('rp-rot-s').value);
+  const rC=parseInt(document.getElementById('rp-rot-c').value);
+  const wS=document.getElementById('rp-weiss-s').value;
+
+  const zones=[
+    {zone:'gelb',tg:gS,count:gC},
+    {zone:'blau',tg:bS,count:bC},
+    {zone:'rot', tg:rS,count:rC},
+    {zone:'weiss',tg:wS==='auto'?null:parseInt(wS),count:0},
+  ];
+
+  // Hide normal fieldLayers, show rammLayers
+  a.fieldLayers.forEach(l=>{try{l.setStyle({opacity:0,fillOpacity:0});}catch(e){}try{l.setOpacity(0);}catch(e){}});
+
+  // Remove old rammLayers
+  if(a.rammLayers){a.rammLayers.forEach(l=>map.removeLayer(l));}
+  a.rammLayers=[];
+
+  // Recompute from rows
+  const local=latlngsToLocal(a.points);
+  const inner=insetPolygon(local,uk.rand);
+  const bbI=bbox(inner);
+  const sperrLocal=(a.sperrflaechen||[]).filter(sf=>sf.points&&sf.points.length>=3).map(sf=>latlngsToLocalOrigin(sf.points,origin));
+
+  const tgCount={gelb:{},blau:{},rot:{},weiss:{}};
+
+  a.rows.forEach(row=>{
+    // Get segments for this row using the original algorithm
+    const rowY=row.rowY;
+    const top=hCuts(inner,rowY),bot=hCuts(inner,rowY+TIEFE);
+    if(top.length<2||bot.length<2)return;
+
+    // Find x-segments
+    let xL=null;
+    for(let x=bbI.minX;x<=bbI.maxX+1;x+=1){
+      const inside=isXBC(top,x)&&isXBC(top,x+1)&&isXBC(bot,x)&&isXBC(bot,x+1);
+      if(inside&&xL===null)xL=x;
+      else if(!inside&&xL!==null){
+        const avail=x-xL;
+        const tische=fillRammplan(xL,avail,uk.hspalt,ta,zones);
+        tische.forEach(t=>{
+          if(!rectIn(inner,t.x,rowY,t.w,TIEFE))return;
+          const zc=ZONE_COLORS_RP[t.zone];
+          const corners=[
+            {x:t.x,    y:rowY},
+            {x:t.x+t.w,y:rowY},
+            {x:t.x+t.w,y:rowY+TIEFE},
+            {x:t.x,    y:rowY+TIEFE},
+          ];
+          const ll=corners.map(c=>localToLatLng(c,origin));
+          const poly=L.polygon(ll,{color:zc.color,weight:zc.weight,fillColor:zc.color,fillOpacity:zc.fillOpacity}).addTo(map);
+          a.rammLayers.push(poly);
+          // Label
+          const ctr=localToLatLng({x:t.x+t.w/2,y:rowY+TIEFE/2},origin);
+          const lbl=L.marker(ctr,{icon:L.divIcon({className:'',html:`<div style="font-family:DM Mono,monospace;font-size:9px;color:#000;white-space:nowrap;pointer-events:none;transform:translate(-50%,-50%);font-weight:500">${t.tg}×${uk.n}</div>`,iconAnchor:[0,0]}),interactive:false}).addTo(map);
+          a.rammLayers.push(lbl);
+          if(!tgCount[t.zone][t.tg])tgCount[t.zone][t.tg]=0;
+          tgCount[t.zone][t.tg]++;
+        });
+        xL=null;
+      }
+    }
+  });
+
+  // Stats
+  const zonNames={gelb:'Gelb',blau:'Blau',rot:'Rot',weiss:'Weiß'};
+  let stat='';
+  for(const [zone,counts] of Object.entries(tgCount)){
+    const entries=Object.entries(counts);
+    if(entries.length){
+      stat+=`${zonNames[zone]}: `+entries.map(([tg,n])=>`${tg}er×${n}`).join(', ')+' &nbsp;';
+    }
+  }
+  document.getElementById('rp-stat').innerHTML=stat;
+  document.getElementById('btn-rammplan-clear').disabled=false;
+}
+
+function rammplanClear(){
+  const a=getActiveArea();
+  if(!a)return;
+  // Restore normal layers
+  a.fieldLayers.forEach(l=>{try{l.setStyle({opacity:1,fillOpacity:.15});}catch(e){}try{l.setOpacity(1);}catch(e){}});
+  if(a.rammLayers){a.rammLayers.forEach(l=>map.removeLayer(l));a.rammLayers=[];}
+  document.getElementById('btn-rammplan-clear').disabled=true;
+}
+
+document.getElementById('btn-rammplan').addEventListener('click',rammplanErstellen);
+document.getElementById('btn-rammplan-clear').addEventListener('click',rammplanClear);
+
+// Enable rammplan button after belegen
+const _origUpdateStats=updateStats;
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 drawSchnitt();
