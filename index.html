@@ -995,17 +995,21 @@ function belegen(){
       }
     }
     rows.forEach(row=>{
-      // Tisch
-      const corners=[
-        {x:row.xStart,            y:row.rowY},
-        {x:row.xStart+row.tischB, y:row.rowY},
-        {x:row.xStart+row.tischB, y:row.rowY+TIEFE},
-        {x:row.xStart,            y:row.rowY+TIEFE},
-      ];
-      const llCorners=corners.map(c=>localToLatLng(c,origin));
-      const rect=L.polygon(llCorners,{color:a.color,weight:1.5,fillColor:a.color,fillOpacity:.15}).addTo(map);
-      a.fieldLayers.push(rect);
-
+      // Reihe in Einzeltische aufteilen (12er→10er→8er→6er)
+      const tische=fillSegmentSued(row.xStart,row.tischB,uk.hspalt);
+      tische.forEach(t=>{
+        const col=TISCH_FARBEN[t.tg]||a.color;
+        const corners=[
+          {x:t.x,     y:row.rowY},
+          {x:t.x+t.w, y:row.rowY},
+          {x:t.x+t.w, y:row.rowY+TIEFE},
+          {x:t.x,     y:row.rowY+TIEFE},
+        ];
+        const llCorners=corners.map(c=>localToLatLng(c,origin));
+        const rect=L.polygon(llCorners,{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
+        rect.bindTooltip(`${t.tg}er Tisch`,{permanent:false,direction:'center'});
+        a.fieldLayers.push(rect);
+      });
     });
 
   } else {
@@ -1017,28 +1021,24 @@ function belegen(){
 
     const drawDR=(colX)=>{
       tryDoppelReiheS(inner,colX,TIEFE,uk.ridge,bbI,uk.hspalt).forEach(pr=>{
-        // Tisch West (blau = Flächenfarbe)
-        const cornersW=[
-          {x:pr.colW,       y:pr.yStart},
-          {x:pr.colW+pr.tw, y:pr.yStart},
-          {x:pr.colW+pr.tw, y:pr.yStart+pr.h},
-          {x:pr.colW,       y:pr.yStart+pr.h},
-        ];
-        const rectW=L.polygon(cornersW.map(c=>localToLatLng(c,origin)),{color:colorW,weight:1.5,fillColor:colorW,fillOpacity:.15}).addTo(map);
-        a.fieldLayers.push(rectW);
-
-
-        // Tisch Ost (grün)
-        const cornersO=[
-          {x:pr.colO,       y:pr.yStart},
-          {x:pr.colO+pr.tw, y:pr.yStart},
-          {x:pr.colO+pr.tw, y:pr.yStart+pr.h},
-          {x:pr.colO,       y:pr.yStart+pr.h},
-        ];
-        const rectO=L.polygon(cornersO.map(c=>localToLatLng(c,origin)),{color:colorO,weight:1.5,fillColor:colorO,fillOpacity:.15}).addTo(map);
-        a.fieldLayers.push(rectO);
-
-
+        // Tisch West: aufteilen in Einzeltische (N-S)
+        const tischeW=fillSegmentWO(pr.yStart,pr.h,uk.hspalt);
+        tischeW.forEach(t=>{
+          const col=TISCH_FARBEN[t.tg]||colorW;
+          const cW=[{x:pr.colW,y:t.y},{x:pr.colW+pr.tw,y:t.y},{x:pr.colW+pr.tw,y:t.y+t.h},{x:pr.colW,y:t.y+t.h}];
+          const rW=L.polygon(cW.map(c=>localToLatLng(c,origin)),{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
+          rW.bindTooltip(`${t.tg}er T-West`,{permanent:false,direction:'center'});
+          a.fieldLayers.push(rW);
+        });
+        // Tisch Ost: aufteilen in Einzeltische (N-S)
+        const tischeO=fillSegmentWO(pr.yStart,pr.h,uk.hspalt);
+        tischeO.forEach(t=>{
+          const col=TISCH_FARBEN[t.tg]||colorO;
+          const cO=[{x:pr.colO,y:t.y},{x:pr.colO+pr.tw,y:t.y},{x:pr.colO+pr.tw,y:t.y+t.h},{x:pr.colO,y:t.y+t.h}];
+          const rO=L.polygon(cO.map(c=>localToLatLng(c,origin)),{color:col,weight:1.5,fillColor:col,fillOpacity:.15}).addTo(map);
+          rO.bindTooltip(`${t.tg}er T-Ost`,{permanent:false,direction:'center'});
+          a.fieldLayers.push(rO);
+        });
         rows.push({xStart:pr.colW,rowY:pr.yStart,tischB:pr.tw*2+uk.ridge,nMod:pr.n*2,side:'wo'});
       });
     };
